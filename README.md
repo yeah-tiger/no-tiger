@@ -1,2 +1,2 @@
 # no-tiger
-Not Original Tiger Language
+Not Ordinary Tiger Language
