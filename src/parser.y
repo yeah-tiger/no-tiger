@@ -45,14 +45,15 @@ using namespace ntc;
 %define parse.assert
 
 %token ADD SUB MUL DIV
+%token IDENTIFIER
 %token INTEGER REAL
 %token SEMI
+%token LPARENT RPARENT LCURLY RCURLY
 %token END 0 "end of file"
 
 %type <int> INTEGER
+%type <std::string> IDENTIFIER
 %type <double> REAL
-%type <CalcNode*> constant
-%type <CalcNode*> addexpr mulexpr
 
 %locations
 

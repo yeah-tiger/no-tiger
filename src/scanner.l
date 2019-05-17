@@ -28,14 +28,25 @@ using token = ntc::Parser::token;
     yylval = lval;
 %}
 
+"int"           { return token::INT; }
 
-
+[_a-zA-Z][_a-zA-Z0-9]
+                { 
+                    yylval->build(yytext);
+                    return token::IDENTIFIER;
+                }
 
 "+"             { return token::ADD; }
 "-"             { return token::SUB; }
 "*"             { return token::MUL; }
 "/"             { return token::DIV; }
+
 ";"             { return token::SEMI; }
+
+"("             { return token::LPARENT; }
+")"             { return token::RPARENT; }
+"{"             { return token::LCURLY; }
+"}"             { return token::RCURLY; }
 
 
 [0-9]+          { 

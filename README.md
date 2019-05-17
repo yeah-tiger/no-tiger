@@ -29,6 +29,8 @@ make
 
 - [x] C++ style Flex/Bison generated scanner/parser
 
+- [ ] support `main`
+
 - [ ] basic arithmetic and variable declaration and definition
 
 - [ ] Support basic control flow

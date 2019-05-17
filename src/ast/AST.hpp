@@ -1,25 +1,27 @@
-// #pragma once
-// #include <deque>
-// #include <memory>
+#pragma once
+#include <deque>
+#include <memory>
 
-// namespace ntc {
-// class AST : public std::enable_shared_from_this<AST> {
-//  public:
-//   virtual ~AST() {}
+#include "../context.hpp"
 
-//   std::deque<std::shared_ptr<AST>>& children() { return children; }
+namespace ntc {
+class AST : public std::enable_shared_from_this<AST> {
+ public:
+  virtual ~AST() noexcept = default;
 
-//   std::weak_ptr<AST>& parent() { return parent; }
+  std::deque<std::shared_ptr<AST>>& children() { return children_; }
 
-//   void add_children(const std::shared_ptr<AST>& child) {
-//     children().push_back(child);
-//     child->parent() = this->shared_from_this();
-//   }
+  std::weak_ptr<AST>& parent() { return parent_; }
 
-//   virtual int evaluate() = 0;
+  void add_child(const std::shared_ptr<AST>& child) {
+    children_.push_back(child);
+    child->parent() = this->shared_from_this();
+  }
 
-//  protected:
-//   std::deque<std::shared_ptr<AST>> children;
-//   std::weak_ptr<AST> parent;
-// };
-// }  // namespace ntc
+  virtual bool codegen(ProgramContext& context) = 0;
+
+ protected:
+  std::deque<std::shared_ptr<AST>> children_;
+  std::weak_ptr<AST> parent_;
+};
+}  // namespace ntc
