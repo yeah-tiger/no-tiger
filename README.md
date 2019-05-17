@@ -17,10 +17,11 @@ make
 
 2. [ANSI-C-grammar-yacc](http://www.quut.com/c/ANSI-C-grammar-y-2011.html)
 
+3. [flex-bison-cpp-example](https://github.com/bingmann/flex-bison-cpp-example/)
+
 
 ## Roadmap
 
-- [x] Use Rust-like type names , eg: `f32, f64, u8, u16, u32, u64, i8, i16, i32, i64`
 - [ ] Support basic control flow
 - [ ] Support function
 - [ ] Support builtin array

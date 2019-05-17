@@ -1,5 +1,8 @@
 #include <cxxopts.hpp>
 #include <iostream>
+#include "driver.hpp"
+#include "context.hpp"
+using namespace ntc;
 enum class ProgramMode {
   EMIT_LLVM_IR,
   EMIT_ASSEMBLY,
@@ -84,5 +87,8 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
+  ProgramContext context;
+  Driver driver(context);
+  driver.parse_file(config.input_filename)
   return 0;
 }
