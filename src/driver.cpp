@@ -1,11 +1,11 @@
 #include "driver.hpp"
-#include "scanner.hpp"
+#include "context.hpp"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 namespace ntc {
-Driver::Driver(ProgramContext& _context)
-    : context(_context), scanner(nullptr) {}
+Driver::Driver(ProgramContext& __context)
+    : _context(__context), scanner(nullptr) {}
 
 bool Driver::parse_file(const std::string& filename) {
   std::ifstream in(filename.c_str());
@@ -13,21 +13,16 @@ bool Driver::parse_file(const std::string& filename) {
     return false;
   }
   Scanner scanner(&in);
-
-  Parser parser(*this);
-  try {
-    int res = parser.parse();
-  } catch(std::logic_error& ) {
-
-  }
+  Parser parser(scanner, *this);
+  int res = parser.parse();
   return res == 0;
 }
 
-ProgramContext& Driver::context() { return context; }
+ProgramContext& Driver::context() { return _context; }
 
 void Driver::error(const std::string& msg) { std::cerr << msg << std::endl; }
 
-void Driver::error(const location& loc, const std::string& msg) {
+void Driver::error(const class location& loc, const std::string& msg) {
   std::cerr << loc << ": " << msg << std::endl;
 }
 

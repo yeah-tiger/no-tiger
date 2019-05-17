@@ -1,17 +1,16 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.1)
 project(no-tiger)
 
 set(CMAKE_CXX_STANDARD 11)
 
-find_package(BISON)
-find_package(FLEX)
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
 
-include_directories(include/)
-
-#BISON_TARGET(Parse src/parse.y ${CMAKE_BINARY_DIR}/y.tab.cpp
-#             DEFINES_FILE ${CMAKE_BINARY_DIR}/y.tab.h)
-#FLEX_TARGET(Scan src/lex.l ${CMAKE_BINARY_DIR}/lex.yy.cpp)
-#ADD_FLEX_BISON_DEPENDENCY(Scan Parse)
+include_directories(include/ src/ ${CMAKE_BINARY_DIR})
+BISON_TARGET(Parser src/parser.y ${CMAKE_BINARY_DIR}/parser.cpp
+            DEFINES_FILE ${CMAKE_BINARY_DIR}/parser.hpp)
+FLEX_TARGET(Scanner src/scanner.l ${CMAKE_BINARY_DIR}/scanner.cpp)
+ADD_FLEX_BISON_DEPENDENCY(Scanner Parser) 
 
 file(GLOB SOURCE_FILES
     "src/main.cpp"
@@ -20,8 +19,8 @@ file(GLOB SOURCE_FILES
 )
 
 add_executable(ntc
-   # ${BISON_Parse_OUTPUTS}
-   # ${FLEX_Scan_OUTPUTS}
+   ${BISON_Parser_OUTPUTS}
+   ${FLEX_Scanner_OUTPUTS}
     ${SOURCE_FILES}
 )
 

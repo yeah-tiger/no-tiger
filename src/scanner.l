@@ -1,40 +1,51 @@
 %{
 #include <string>
 #include <algorithm>
+
 #include "scanner.hpp"
+// define the signature of yylex
+#undef YY_DECL
+#define YY_DECL int ntc::Scanner::yylex( ntc::Parser::semantic_type* lval, ntc::Parser::location_type* location )
+
 
 using token = ntc::Parser::token;
-using token_type = ntc::Parser::token_type
 
 #define yyterminate() return token::END
 
-#define YY_USER_ACTION location->columns(yyleng);
+#define YY_USER_ACTION location->step(); location->columns(yyleng);
 
+#define YY_NO_UNISTD_H
 %}
 
 %option c++
 %option stack
-%option yyclass="Scanner"
+%option yyclass="ntc::Scanner"
 %option nodefault
 %option noyywrap
 %%
 
 %{
-    location->step();
+    yylval = lval;
 %}
+
+
+
 
 "+"             { return token::ADD; }
 "-"             { return token::SUB; }
 "*"             { return token::MUL; }
 "/"             { return token::DIV; }
+";"             { return token::SEMI; }
+
 
 [0-9]+          { 
-                    lval->build(std::stoi(yytext)); 
+                    /* TODO: add lex definition here  */
+                    yylval->build(std::stoi(yytext)); 
                     return token::INTEGER;
                 }
 
 [0-9]+\.[0-9]+  {
-                    lval->build(std::stod(yytext));
+                    yylval->build(std::stod(yytext));
                     return token::REAL;
                 }
 
@@ -53,9 +64,3 @@ using token_type = ntc::Parser::token_type
 
 
 %%
-
-namespace ntc {
-    Scanner::Scanner(std::istream *in): FlexLexer(in) {}
-
-    Scanner::~Scanner() {}
-}

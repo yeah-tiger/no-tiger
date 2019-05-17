@@ -1,34 +1,28 @@
 #ifndef NTC_SCANNER_H
 #define NTC_SCANNER_H
 
-
-// define the signature of yylex
-#ifndef YY_DECL
-#define YY_DECL                               \
-    ntc::Parser::token_type                   \
-    ntc::Scanner::lex(                        \
-        ntc::Parser::semantic_type* lval,   \
-        ntc::Parser::location_type* location    \
-    )
-#endif
-
-#ifndef yyFlexLexerOnce
+#if ! defined( yyFlexLexerOnce )
 #include <FlexLexer.h>
 #endif
 
 // for token_type
 #include "parser.hpp"
+#include "location.hh"
 
 namespace ntc {
   class Scanner: public yyFlexLexer {
     public:
-      Scanner(std::istream *in);
-      virtual ~Scanner();
+      Scanner(std::istream *in): yyFlexLexer(in) {};
 
-      virtual Parser::token_type lex(Parser::semantic_type* lval, Parser::location_type *location);
+      virtual ~Scanner() {};
 
-      void error(const char* yytext, Parser)
-  }
+      using FlexLexer::yylex;
+
+      virtual int yylex(ntc::Parser::semantic_type* lval, ntc::Parser::location_type *location);
+
+  private:
+    ntc::Parser::semantic_type* yylval = nullptr;
+  };
 }
 
 

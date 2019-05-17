@@ -22,13 +22,13 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
   try {
     cxxopts::Options options(argv[0], "- ntc: No-Tiger Lang Compiler`");
     options.positional_help("[optional args]").show_positional_help();
-    options.add_options()("i, input", "Input file",
-                          cxxopts::value<std::string>(),
-                          "FILE")("l", "Emit llvm IR")(
-        "s", "Emit assembly code")("c", "Emit object code")(
-        "o, output", "Output file",
-        cxxopts::value<std::string>()->default_value("a"),
-        "FILE")("h, help", "Show help");
+    options.add_options()
+    ("i, input", "Input file", cxxopts::value<std::string>(), "FILE")
+    ("l", "Emit llvm IR")
+    ("s", "Emit assembly code")
+    ("c", "Emit object code")
+    ("o, output", "Output file", cxxopts::value<std::string>()->default_value("a"), "FILE")
+    ("h, help", "Show help");
     auto parse_result = options.parse(argc, argv);
     if (parse_result.count("h")) {
       std::cout << options.help({"", "Group"}) << std::endl;
@@ -89,6 +89,9 @@ int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
   ProgramContext context;
   Driver driver(context);
-  driver.parse_file(config.input_filename)
+  bool res = driver.parse_file(config.input_filename);
+  if (res == true) {
+    std::cout << "res = " << context.evaluate() << std::endl;
+  }
   return 0;
 }
