@@ -5,14 +5,6 @@ Not Ordinary Tiger Language
 
 no-tiger is the course project for Compiler, Zhejiang University, Spring 2019.
 
-## Build
-- prerequisite: CMake3, Flex, Bison, GCC >= 4.9.0 (for `regex` support)
-
-```bash
-mkdir build && cd build && cmake3 ..
-make
-```
-
 ## Reference
 
 1. [ANSI-C-grammar-lex](http://www.quut.com/c/ANSI-C-grammar-l-2011.html)
@@ -21,6 +13,17 @@ make
 
 3. [FLEX AND BISON IN C++](http://www.jonathanbeard.io/tutorials/FlexBisonC++) best workable example
 
+## Build
+```
+git clone --recursive [url]
+```
+
+- prerequisite: cmake3, Flex, Bison, GCC >= 4.9.0 (for `regex` support)
+
+```bash
+mkdir build && cd build && cmake3 ..
+make
+```
 
 ## Roadmap
 
@@ -39,3 +42,7 @@ make
 - [ ] Support builtin I/O functions
 
 - [ ] For simplicity, I think we should not support pointer for now
+
+## Built With
+
+- [cxxopts](https://github.com/jarro2783/cxxopts) - Lightweight C++ command line option parser

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
-include_directories(include/ src/ ${CMAKE_BINARY_DIR})
+include_directories(cxxopts/include src/ ${CMAKE_BINARY_DIR})
 BISON_TARGET(Parser src/parser.y ${CMAKE_BINARY_DIR}/parser.cpp
             DEFINES_FILE ${CMAKE_BINARY_DIR}/parser.hpp)
 FLEX_TARGET(Scanner src/scanner.l ${CMAKE_BINARY_DIR}/scanner.cpp)
