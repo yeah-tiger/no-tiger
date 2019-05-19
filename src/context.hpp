@@ -1,21 +1,15 @@
 #pragma once
-#include <memory>
 #include <cassert>
+#include <memory>
 #include <vector>
-// #include "./ast/"
-namespace ntc
-{
+#include "ast.hpp"
+namespace ntc {
 
-class ProgramContext
-{
-public:
-  bool codegen_x86();
+class ProgramContext {
+ public:
+  auto& get_start() { return program_start; }
 
-  bool codegen_llvm();
-
-private:
-  // TODO: llvm facilties
-  std::unique_ptr<Program> program_;
-  
+ private:
+  std::unique_ptr<TranslationUnit> program_start;
 };
-} // namespace ntc
+}  // namespace ntc

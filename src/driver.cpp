@@ -1,5 +1,4 @@
 #include "driver.hpp"
-#include "context.hpp"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>

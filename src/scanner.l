@@ -28,25 +28,25 @@ using token = ntc::Parser::token;
     yylval = lval;
 %}
 
+
+
+"return"        { return token::RETURN; }
+
 "int"           { return token::INT; }
+"float"         { return token::FLOAT; }
+"double"        { return token::DOUBLE; }
 
-[_a-zA-Z][_a-zA-Z0-9]
-                { 
-                    yylval->build(yytext);
-                    return token::IDENTIFIER;
-                }
+"+"             { return '+'; }
+"-"             { return '-'; }
+"*"             { return '*'; }
+"/"             { return '/'; }
 
-"+"             { return token::ADD; }
-"-"             { return token::SUB; }
-"*"             { return token::MUL; }
-"/"             { return token::DIV; }
+";"             { return ';'; }
 
-";"             { return token::SEMI; }
-
-"("             { return token::LPARENT; }
-")"             { return token::RPARENT; }
-"{"             { return token::LCURLY; }
-"}"             { return token::RCURLY; }
+"("             { return '('; }
+")"             { return ')'; }
+"{"             { return '{'; }
+"}"             { return '}'; }
 
 
 [0-9]+          { 
@@ -59,6 +59,14 @@ using token = ntc::Parser::token;
                     yylval->build(std::stod(yytext));
                     return token::REAL;
                 }
+
+
+[_a-zA-Z][_a-zA-Z0-9]
+                { 
+                    yylval->build(yytext);
+                    return token::IDENTIFIER;
+                }
+
 
 [\n]            { 
                     location->lines(); 

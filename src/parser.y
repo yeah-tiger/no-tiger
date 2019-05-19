@@ -8,10 +8,15 @@
 %locations
 
 %code requires {
+#include <iostream>
+#include <string>
+#include <memory>
+#include <utility>
 namespace ntc{
   class Driver;
   class Scanner;
-  class CalcNode;
+  class TranslationUnit;
+  class ExternalDecl;
 }
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -26,13 +31,11 @@ namespace ntc{
 %parse-param { Scanner& scanner }
 %parse-param { Driver& driver }
 
-%start start
+
 
 
 %code {
-#include <iostream>
-#include <string>
-#include "context.hpp"
+#include "ast.hpp"
 #include "driver.hpp"
 
 #undef yylex
@@ -44,70 +47,83 @@ using namespace ntc;
 
 %define parse.assert
 
-%token ADD SUB MUL DIV
 %token IDENTIFIER
+%token INT FLOAT DOUBLE 
 %token INTEGER REAL
-%token SEMI
-%token LPARENT RPARENT LCURLY RCURLY
 %token END 0 "end of file"
+%token RETURN
 
 %type <int> INTEGER
 %type <std::string> IDENTIFIER
-%type <double> REAL
+%type <std::unique_ptr<TranslationUnit>> translation_unit
+%type <std::unique_ptr<ExternalDecl>> external_declaration
 
 %locations
 
-%% 
+%start start
+%%
+start
+      : translation_unit END
+      {
+        driver.context().get_start() = std::move($1);
+      }
+
 /*** TODO: grammar rule here ***/
+translation_unit
+      : external_declaration
+      {
+        $$ = make_ast<TranslationUnit>(std::move($1));
+      }
+      | translation_unit external_declaration
+      {
+        $$ = std::move($1);
+        $$->add_external_declaration(std::move($2));
+      }
+      ;
 
-start:  /* empty */
-        
-        | start SEMI
-        | start addexpr END
-        {
-          driver.context().set_start($2);
-        }
-        | start addexpr SEMI
-        {
-          driver.context().set_start($2);
-        };
-
-constant: INTEGER
-          {
-            $$ = new ValNode(static_cast<double>($1));
-          }
-          | REAL
-          {
-            $$ = new ValNode($1);
-          };
-
-mulexpr: constant
-          {
-            $$ = $1;
-          }
-          | mulexpr MUL constant
-          {
-            $$ = new OpNode($1, $3, '*');
-          }
-          | mulexpr DIV constant
-          {
-            $$ = new OpNode($1, $3, '/');
-          };
+external_declaration
+      : INTEGER
+      {
+        $$ = make_ast<ExternalDecl>($1);
+      }
+      ;
 
 
-addexpr: mulexpr
-          {
-            $$ = $1;
-          }
-          | addexpr ADD mulexpr
-          {
-            $$ = new OpNode($1, $3, '+');
-          }
-          | addexpr SUB mulexpr
-          {
-            $$ = new OpNode($1, $3, '-');
-          };
+/*** for main only ***/
+/***
+function_definition
+      : INT IDENTIFIER '(' ')' compound_statement
+      ;
 
+declaration_list
+      : declaration
+      | declaration_list declaration
+      ;
+
+
+
+statement_list
+      : statement
+      | statement_list statement
+      ;
+
+statement
+      : return_statment
+      : compound_statement
+      ;
+
+
+return_statment
+      : RETURN expression ';'
+      : RETURN ';'
+      ;
+
+
+compound_statement
+      : '{' '}'
+      | '{' statement_list '}'
+      ;
+***/
 %%
 
 void ntc::Parser::error(const location_type &loc, const std::string& msg) {

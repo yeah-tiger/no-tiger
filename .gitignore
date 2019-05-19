@@ -1,3 +1,4 @@
 .vscode/
 *.exe/
 src/*.o
+test.cpp
