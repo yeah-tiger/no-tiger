@@ -61,7 +61,7 @@ using token = ntc::Parser::token;
                 }
 
 
-[_a-zA-Z][_a-zA-Z0-9]
+[_a-zA-Z]([_a-zA-Z]|[0-9])+
                 { 
                     yylval->build(yytext);
                     return token::IDENTIFIER;
