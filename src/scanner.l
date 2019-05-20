@@ -28,29 +28,33 @@ using token = ntc::Parser::token;
     yylval = lval;
 %}
 
-
-
 "return"        { return token::RETURN; }
 
 "int"           { return token::INT; }
 "float"         { return token::FLOAT; }
 "double"        { return token::DOUBLE; }
+"short"         { return token::SHORT; }
+"long"          { return token::LONG; }
+"char"          { return token::CHAR; }
+"void"          { return token::VOID; }
+"bool"          { return token::BOOL; }
+"unsigned"      { return token::UNSIGNED; }
+"signed"        { return token::SIGNED; }
 
-"+"             { return '+'; }
-"-"             { return '-'; }
-"*"             { return '*'; }
-"/"             { return '/'; }
+"true"          { 
+                  yylval->build(true);
+                  return token::BOOLEAN;
+                }
 
-";"             { return ';'; }
+"false"         {
+                  yylval->build(false);
+                  return token::BOOLEAN;
+                }
 
-"("             { return '('; }
-")"             { return ')'; }
-"{"             { return '{'; }
-"}"             { return '}'; }
+"const"         { return token::CONST; }
 
 
-[0-9]+          { 
-                    /* TODO: add lex definition here  */
+[0-9]+          {
                     yylval->build(std::stoi(yytext)); 
                     return token::INTEGER;
                 }
@@ -60,12 +64,24 @@ using token = ntc::Parser::token;
                     return token::REAL;
                 }
 
-
-[_a-zA-Z]([_a-zA-Z]|[0-9])+
-                { 
+([_a-zA-Z])([_a-zA-Z0-9])* { 
                     yylval->build(yytext);
                     return token::IDENTIFIER;
                 }
+
+"+"             { return ('+'); }
+"-"             { return ('-'); }
+"*"             { return ('*'); }
+"/"             { return ('/'); }
+
+";"             { return (';'); }
+"("			    { return ('('); }
+")"			    { return (')'); }
+"{"		        { return ('{'); }
+"}"		        { return ('}'); }
+
+
+
 
 
 [\n]            { 
