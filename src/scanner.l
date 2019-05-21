@@ -28,6 +28,26 @@ using token = ntc::Parser::token;
     yylval = lval;
 %}
 
+"/*"            { 
+                    int c;
+                    while ((c = yyinput())) {
+                      if (c == '*') {
+                        if ((c = yyinput()) == '/') {
+                            break;
+                        } else {
+                            unput(c);
+                        }
+                      } else if (c == '\n') {
+                        location->lines();
+                      } else if (c == '\0') {
+                        std::cerr << "unexpected EOF inside comment at" << *location << std::endl;
+                        throw std::logic_error("Invalid character\n");
+                      }
+                    }
+                }
+
+"//".*          { continue; }
+
 "return"        { return token::RETURN; }
 
 "int"           { return token::INT; }
@@ -64,6 +84,18 @@ using token = ntc::Parser::token;
                     return token::REAL;
                 }
 
+'(\\.|[^\\'])+' {
+                    std::cout << "PARSE CHAR" << std::endl;
+                    yylval->build(std::string(yytext));
+                    return token::CHARACTER;
+                }
+
+\"(\\.|[^\\"])*\" {
+                    std::cout << "parse string literal" << std::endl;
+                    yylval->build(std::string(yytext));
+                    return token::STRING_LITERAL;
+                }
+
 ([_a-zA-Z])([_a-zA-Z0-9])* {
                     yylval->build(std::string(yytext));
                     return token::IDENTIFIER;
@@ -76,16 +108,16 @@ using token = ntc::Parser::token;
 
 ","             { return (','); }
 ";"             { return (';'); }
-"("			    { return ('('); }
-")"			    { return (')'); }
-"{"		        { return ('{'); }
-"}"		        { return ('}'); }
+"("			        { return ('('); }
+")"			        { return (')'); }
+"{"		          { return ('{'); }
+"}"		          { return ('}'); }
 
 
 
 
 
-[\n\r]            { 
+[\n\r]          { 
                     location->lines();
                 }
 
@@ -93,7 +125,7 @@ using token = ntc::Parser::token;
                     continue; 
                 }
 
-.		        {
+.		            {
                     std::cerr << "Error at " << *location << "" <<  ":" << std::endl;
                     std::cerr << std::string(yytext) << std::endl;
                     throw std::logic_error("Invalid character\n");

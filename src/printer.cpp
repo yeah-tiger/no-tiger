@@ -65,6 +65,7 @@ void Printer::visit(ParameterDeclaration& parameter_declaration) {
   indent();
   
   dedent();
+  output_space();
   os << "</ParameterDeclaration>" << std::endl;
 }
 

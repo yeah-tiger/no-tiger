@@ -68,14 +68,14 @@ using namespace ntc;
 %token IDENTIFIER
 %token INT FLOAT DOUBLE SHORT LONG CHAR VOID BOOL SIGNED UNSIGNED
 %token CONST
-%token INTEGER REAL BOOLEAN
+%token INTEGER REAL BOOLEAN CHARACTER STRING_LITERAL
 %token END 0 "end of file"
 %token RETURN
 
 %type <int> INTEGER
 %type <double> REAL
 %type <bool> BOOLEAN
-%type <std::string> IDENTIFIER
+%type <std::string> IDENTIFIER CHARACTER STRING_LITERAL
 %type <std::unique_ptr<TypeSpecifier>> type_specifier
 %type <std::unique_ptr<DeclarationSpecifier>> declaration_specifiers
 %type <std::unique_ptr<ParameterDeclaration>> parameter_declaration
@@ -220,12 +220,13 @@ constant_expression
       }
       ;
 
-/*** 
+/***
 primary_expression
       : constant_expression
+      | IDENTIFIER
+      | STRING_LITERAL
+      | '(' expression ')'
       ;
-TODO: comment out for now
-replace constant for primary in expression
 ***/
 
 expression
