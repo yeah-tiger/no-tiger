@@ -13,10 +13,6 @@ class Driver {
 
   bool parse_file(const std::string& filename);
 
-  void error(const std::string& msg);
-
-  void error(const location& loc, const std::string& msg);
-
   ProgramContext& context();
 
  private:

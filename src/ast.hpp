@@ -2,6 +2,7 @@
 #pragma once
 #include <cassert>
 #include <deque>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -29,6 +30,8 @@ class ConstantExpression;
 class IntegerExpression;
 class FloatExpression;
 class BooleanExpression;
+class CharacterExpression;
+class StringLiteralExpression;
 
 class AST {
  public:
@@ -47,7 +50,7 @@ class Expression : public Statement {
 };
 
 class ExternalDeclaration : public AST {
-  public:
+ public:
   virtual ~ExternalDeclaration() {}
 };
 
@@ -73,8 +76,9 @@ class TranslationUnit final : public AST {
 
 class ParameterDeclaration final : public AST {
  public:
-  ParameterDeclaration(std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
-                       std::unique_ptr<Identifier>&& identifier)
+  ParameterDeclaration(
+      std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
+      std::unique_ptr<Identifier>&& identifier)
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)) {}
 
@@ -98,7 +102,7 @@ class ParameterList final : public AST {
     parameter_list_.push_back(std::move(parameter_declaration));
   }
 
-  auto& get_parameter_list() {return parameter_list_; }
+  auto& get_parameter_list() { return parameter_list_; }
 
  protected:
   std::vector<std::unique_ptr<ParameterDeclaration>> parameter_list_;
@@ -114,18 +118,18 @@ class FunctionDefinition final : public ExternalDeclaration {
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)),
         compound_statement_(std::move(compound_statement)) {
-          if (parameter_list != nullptr) {
-            parameter_list_ = std::move(parameter_list->get_parameter_list());
-          }
-        }
+    if (parameter_list != nullptr) {
+      parameter_list_ = std::move(parameter_list->get_parameter_list());
+    }
+  }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
-  auto& get_declaration_specifier()  { return declaration_specifier_; }
+  auto& get_declaration_specifier() { return declaration_specifier_; }
 
   auto& get_identifier() { return identifier_; }
 
-  auto& get_parameter_list()  { return parameter_list_; }
+  auto& get_parameter_list() { return parameter_list_; }
 
   auto& get_compound_statement() { return compound_statement_; }
 
@@ -172,7 +176,6 @@ class Identifier final : public Expression {
  protected:
   std::string name_;
 };
-
 
 class TypeSpecifier final : public AST {
  public:
@@ -252,7 +255,7 @@ class FloatExpression final : public ConstantExpression {
   FloatExpression(double val) : val_(val) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
-  
+
  protected:
   double val_;
 };
@@ -267,6 +270,29 @@ class BooleanExpression final : public ConstantExpression {
   bool val_;
 };
 
+class CharacterExpression final : public ConstantExpression {
+ public:
+  CharacterExpression(char val) : val_(val) {}
+
+  static bool check_character(const std::string& input) {
+    return input.length() == 1;
+  }
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  char val_;
+};
+
+class StringLiteralExpression final : public ConstantExpression {
+ public:
+  StringLiteralExpression(const std::string& val) : val_(val) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::string val_;
+};
 // factory function
 template <typename AstType, typename... Args>
 std::unique_ptr<AstType> make_ast(Args&&... args) {

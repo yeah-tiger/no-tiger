@@ -85,14 +85,14 @@ using token = ntc::Parser::token;
                 }
 
 '(\\.|[^\\'])+' {
-                    std::cout << "PARSE CHAR" << std::endl;
-                    yylval->build(std::string(yytext));
+                    yytext[yyleng - 1] = 0;
+                    yylval->build(std::string(yytext + 1));
                     return token::CHARACTER;
                 }
 
 \"(\\.|[^\\"])*\" {
-                    std::cout << "parse string literal" << std::endl;
-                    yylval->build(std::string(yytext));
+                    yytext[yyleng - 1] = 0;
+                    yylval->build(std::string(yytext + 1));
                     return token::STRING_LITERAL;
                 }
 
@@ -126,9 +126,8 @@ using token = ntc::Parser::token;
                 }
 
 .		            {
-                    std::cerr << "Error at " << *location << "" <<  ":" << std::endl;
-                    std::cerr << std::string(yytext) << std::endl;
-                    throw std::logic_error("Invalid character\n");
+                    std::cerr << "Scanner: Error at " << *location << "" <<  ":" << std::endl;
+                    throw std::logic_error("Scanner: Invalid character\n");
                 }
 
 

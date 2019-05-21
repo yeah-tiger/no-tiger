@@ -139,4 +139,25 @@ void Printer::visit(BooleanExpression& boolean_expression) {
   os << "</BooleanExpression>" << std::endl;
 }
 
+void Printer::visit(CharacterExpression& character_expression) {
+  output_space();
+  os << "<CharacterExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</CharacterExpression>" << std::endl;
+}
+
+void Printer::visit(StringLiteralExpression& string_literal_expression) {
+  output_space();
+  os << "<StringLiteralExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</StringLiteralExpression>" << std::endl;
+}
+
+
 }  // namespace ntc

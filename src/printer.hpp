@@ -30,6 +30,9 @@ class Printer final : public Visitor {
 
   virtual void visit(BooleanExpression& boolean_expression) override;
 
+  virtual void visit(CharacterExpression& character_expression) override;
+
+  virtual void visit(StringLiteralExpression& string_literal_expression) override;
 
  private:
   void indent(int cnt = 2);

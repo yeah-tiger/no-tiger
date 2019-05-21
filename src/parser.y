@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <stdexcept>
 namespace ntc{
   class Driver;
   class Scanner;
@@ -37,6 +38,8 @@ namespace ntc{
   class IntegerExpression;
   class FloatExpression;
   class BooleanExpression;
+  class CharacterExpression;
+  class StringLiteralExpression;
 
 }
 # ifndef YY_NULLPTR
@@ -81,7 +84,7 @@ using namespace ntc;
 %type <std::unique_ptr<ParameterDeclaration>> parameter_declaration
 %type <std::unique_ptr<ParameterList>> parameter_list
 %type <std::unique_ptr<ConstantExpression>> constant_expression
-%type <std::unique_ptr<Expression>> expression
+%type <std::unique_ptr<Expression>> expression primary_expression
 %type <std::unique_ptr<ExpressionStatement>> expression_statement
 %type <std::unique_ptr<ReturnStatement>> return_statment
 %type <std::unique_ptr<CompoundStatement>> compound_statement
@@ -205,34 +208,56 @@ parameter_list
 constant_expression
       : INTEGER
       {
-        //std::cout << "parameter_list INTEGER" << std::endl;
+        //std::cout << "constant_expression INTEGER" << std::endl;
         $$ = make_ast<IntegerExpression>($1);
       }
       | REAL
       {
-        //std::cout << "parameter_list REAL" << std::endl;
+        //std::cout << "constant_expression REAL" << std::endl;
         $$ = make_ast<FloatExpression>($1);
       }
       | BOOLEAN
       {
-        //std::cout << "parameter_list BOOLEAN" << std::endl;
+        //std::cout << "constant_expression BOOLEAN" << std::endl;
         $$ = make_ast<BooleanExpression>($1);
+      }
+      | CHARACTER
+      {
+        //std::cout << "constant_expression CHARACTER" << std::endl;
+        if (CharacterExpression::check_character($1)) {
+          $$ = make_ast<CharacterExpression>($1[0]);
+        } else {
+          error(@1, "multi-character character constant");
+        }
+      }
+      | STRING_LITERAL
+      {
+        //std::cout << "constant_expression STRING_LITERAL" << std::endl;
+        $$ = make_ast<StringLiteralExpression>($1);
       }
       ;
 
-/***
+
 primary_expression
       : constant_expression
+      {
+        $$ = std::move($1);
+      }
       | IDENTIFIER
-      | STRING_LITERAL
+      {
+        auto identifier = make_ast<Identifier>($1);
+        $$ = std::move(identifier);
+      }
       | '(' expression ')'
+      {
+        $$ = std::move($2);
+      }
       ;
-***/
 
 expression
-      : constant_expression
+      : primary_expression
       {
-        //std::cout << "expression constant_expression" << std::endl;
+        //std::cout << "expression primary_expression" << std::endl;
         $$ = std::move($1);
       }
       ;
@@ -356,5 +381,6 @@ translation_unit
 %%
 
 void ntc::Parser::error(const location_type &loc, const std::string& msg) {
-  driver.error(loc, msg);
+  std::cerr << loc << ": " << msg << std::endl;
+  throw std::logic_error("Parser: invalid syntax");
 }

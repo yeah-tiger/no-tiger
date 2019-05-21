@@ -12,6 +12,9 @@ class ReturnStatement;
 class IntegerExpression;
 class FloatExpression;
 class BooleanExpression;
+class CharacterExpression;
+class StringLiteralExpression;
+
 class Visitor {
  public:
   virtual ~Visitor() {}
@@ -27,5 +30,7 @@ class Visitor {
   virtual void visit(IntegerExpression&) = 0;
   virtual void visit(FloatExpression&) = 0;
   virtual void visit(BooleanExpression&) = 0;
+  virtual void visit(CharacterExpression&) = 0;
+  virtual void visit(StringLiteralExpression&) = 0;
 };
 }  // namespace ntc
