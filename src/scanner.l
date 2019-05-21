@@ -1,7 +1,7 @@
 %{
 #include <string>
 #include <algorithm>
-
+#include <iostream>
 #include "scanner.hpp"
 // define the signature of yylex
 #undef YY_DECL
@@ -28,18 +28,33 @@ using token = ntc::Parser::token;
     yylval = lval;
 %}
 
+"return"        { return token::RETURN; }
+
+"int"           { return token::INT; }
+"float"         { return token::FLOAT; }
+"double"        { return token::DOUBLE; }
+"short"         { return token::SHORT; }
+"long"          { return token::LONG; }
+"char"          { return token::CHAR; }
+"void"          { return token::VOID; }
+"bool"          { return token::BOOL; }
+"unsigned"      { return token::UNSIGNED; }
+"signed"        { return token::SIGNED; }
+
+"true"          { 
+                  yylval->build(true);
+                  return token::BOOLEAN;
+                }
+
+"false"         {
+                  yylval->build(false);
+                  return token::BOOLEAN;
+                }
+
+"const"         { return token::CONST; }
 
 
-
-"+"             { return token::ADD; }
-"-"             { return token::SUB; }
-"*"             { return token::MUL; }
-"/"             { return token::DIV; }
-";"             { return token::SEMI; }
-
-
-[0-9]+          { 
-                    /* TODO: add lex definition here  */
+[0-9]+          {
                     yylval->build(std::stoi(yytext)); 
                     return token::INTEGER;
                 }
@@ -49,8 +64,29 @@ using token = ntc::Parser::token;
                     return token::REAL;
                 }
 
-[\n]            { 
-                    location->lines(); 
+([_a-zA-Z])([_a-zA-Z0-9])* {
+                    yylval->build(std::string(yytext));
+                    return token::IDENTIFIER;
+                }
+
+"+"             { return ('+'); }
+"-"             { return ('-'); }
+"*"             { return ('*'); }
+"/"             { return ('/'); }
+
+","             { return (','); }
+";"             { return (';'); }
+"("			    { return ('('); }
+")"			    { return (')'); }
+"{"		        { return ('{'); }
+"}"		        { return ('}'); }
+
+
+
+
+
+[\n\r]            { 
+                    location->lines();
                 }
 
 [ \t]+          { 
@@ -59,6 +95,7 @@ using token = ntc::Parser::token;
 
 .		        {
                     std::cerr << "Error at " << *location << "" <<  ":" << std::endl;
+                    std::cerr << std::string(yytext) << std::endl;
                     throw std::logic_error("Invalid character\n");
                 }
 

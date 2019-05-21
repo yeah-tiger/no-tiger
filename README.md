@@ -21,13 +21,14 @@ git clone --recursive [url]
 - prerequisite: cmake3, Flex, Bison, GCC >= 4.9.0 (for `regex` support)
 
 ```bash
-mkdir build && cd build && cmake3 ..
-make
+sh build.sh
 ```
 
 ## Roadmap
 
 - [x] C++ style Flex/Bison generated scanner/parser
+
+- [ ] support `main`
 
 - [ ] basic arithmetic and variable declaration and definition
 

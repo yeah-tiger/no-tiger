@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "context.hpp"
 #include "scanner.hpp"
 #include "parser.hpp"
 namespace ntc {

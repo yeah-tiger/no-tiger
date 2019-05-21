@@ -1,5 +1,6 @@
 #include <cxxopts.hpp>
 #include <iostream>
+#include "printer.hpp"
 #include "driver.hpp"
 #include "context.hpp"
 using namespace ntc;
@@ -91,7 +92,8 @@ int main(int argc, char* argv[]) {
   Driver driver(context);
   bool res = driver.parse_file(config.input_filename);
   if (res == true) {
-    std::cout << "res = " << context.evaluate() << std::endl;
+    Printer printer(std::cout);
+    context.get_start()->accept(printer);
   }
   return 0;
 }
