@@ -18,6 +18,7 @@ void Printer::visit(TranslationUnit& translation_unit) {
     decl->accept(*this);
   }
   dedent();
+  output_space();
   os << "</TranslationUnit>" << std::endl;
 }
 
@@ -33,6 +34,7 @@ void Printer::visit(FunctionDefinition& function_definition) {
   }
   visit(*(function_definition.get_compound_statement()));
   dedent();
+  output_space();
   os << "</FunctionDefinition>" << std::endl;
 }
 
@@ -42,15 +44,18 @@ void Printer::visit(DeclarationSpecifier& declaration_specifier) {
   indent();
 
   dedent();
+  output_space();
   os << "</DeclarationSpecifier>" << std::endl;
 }
 
 void Printer::visit(Identifier& identifier) {
   output_space();
-  os << "<Identifier>" << std::endl;
+  os << "<Identifier";
+  os << "name=" << identifier.get_name() << ">" << std::endl;
   indent();
-  os << "name=" << identifier.get_name() << std::endl;
+  
   dedent();
+  output_space();
   os << "</Identifier>" << std::endl;
 }
 
@@ -69,6 +74,7 @@ void Printer::visit(TypeSpecifier& type_specifier) {
   indent();
 
   dedent();
+  output_space();
   os << "</TypeSpecifier>" << std::endl;
 }
 
@@ -78,6 +84,7 @@ void Printer::visit(CompoundStatement& compound_statement) {
   indent();
 
   dedent();
+  output_space();
   os << "</CompoundStatement>" << std::endl;
 }
 
@@ -87,6 +94,7 @@ void Printer::visit(ExpressionStatement& expression_statement) {
   indent();
 
   dedent();
+  output_space();
   os << "</ExpressionStatement>" << std::endl;
 }
 
@@ -96,6 +104,7 @@ void Printer::visit(ReturnStatement& return_statement) {
   indent();
 
   dedent();
+  output_space();
   os << "</ReturnStatement>" << std::endl;
 }
 
@@ -105,6 +114,7 @@ void Printer::visit(IntegerExpression& integer_expression) {
   indent();
 
   dedent();
+  output_space();
   os << "</IntegerExpression>" << std::endl;
 }
 
@@ -114,6 +124,7 @@ void Printer::visit(FloatExpression& float_expression) {
   indent();
 
   dedent();
+  output_space();
   os << "</FloatExpression>" << std::endl;
 }
 
@@ -123,6 +134,7 @@ void Printer::visit(BooleanExpression& boolean_expression) {
   indent();
 
   dedent();
+  output_space();
   os << "</BooleanExpression>" << std::endl;
 }
 

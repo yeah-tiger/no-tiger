@@ -1,7 +1,7 @@
 %{
 #include <string>
 #include <algorithm>
-
+#include <iostream>
 #include "scanner.hpp"
 // define the signature of yylex
 #undef YY_DECL
@@ -64,8 +64,8 @@ using token = ntc::Parser::token;
                     return token::REAL;
                 }
 
-([_a-zA-Z])([_a-zA-Z0-9])* { 
-                    yylval->build(yytext);
+([_a-zA-Z])([_a-zA-Z0-9])* {
+                    yylval->build(std::string(yytext));
                     return token::IDENTIFIER;
                 }
 
@@ -84,8 +84,8 @@ using token = ntc::Parser::token;
 
 
 
-[\n]            { 
-                    location->lines(); 
+[\n\r]            { 
+                    location->lines();
                 }
 
 [ \t]+          { 
@@ -94,6 +94,7 @@ using token = ntc::Parser::token;
 
 .		        {
                     std::cerr << "Error at " << *location << "" <<  ":" << std::endl;
+                    std::cerr << std::string(yytext) << std::endl;
                     throw std::logic_error("Invalid character\n");
                 }
 

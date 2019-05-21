@@ -113,8 +113,11 @@ class FunctionDefinition final : public ExternalDeclaration {
       std::unique_ptr<CompoundStatement>&& compound_statement)
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)),
-        parameter_list_(std::move(parameter_list->get_parameter_list())),
-        compound_statement_(std::move(compound_statement)) {}
+        compound_statement_(std::move(compound_statement)) {
+          if (parameter_list != nullptr) {
+            parameter_list_ = std::move(parameter_list->get_parameter_list());
+          }
+        }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
@@ -249,7 +252,7 @@ class FloatExpression final : public ConstantExpression {
   FloatExpression(double val) : val_(val) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
-
+  
  protected:
   double val_;
 };
