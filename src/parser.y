@@ -147,6 +147,11 @@ type_specifier
         //std::cout << "type_specifier SIGNED" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::SIGNED);
       }
+      | BOOL
+      {
+        //std::cout << "type_specifier BOOL" << std::endl;
+        $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::BOOL);
+      }
       ;
 
 declaration_specifiers
