@@ -15,6 +15,8 @@ no-tiger is the course project for Compiler, Zhejiang University, Spring 2019.
 
 3. [FLEX AND BISON IN C++](http://www.jonathanbeard.io/tutorials/FlexBisonC++) best workable example
 
+4. [compiler2018_big_picture](https://acm.sjtu.edu.cn/w/images/b/b5/Compiler2018_big_picture.pdf) slides from Lequn Chen, TA from SJTU (now PhD at UW)
+
 ## Build
 ```
 git clone --recursive [url]
@@ -36,7 +38,9 @@ sh build.sh
 
 - [x] Support function definition
 
-- [ ] Support expressions
+- [x] Support expressions
+
+- [ ] AST format output (XML/json)
 
 - [ ] LLVM codegen
 

@@ -79,13 +79,32 @@ void Printer::visit(TypeSpecifier& type_specifier) {
   os << "</TypeSpecifier>" << std::endl;
 }
 
+void Printer::visit(Declaration& declaration) {
+  output_space();
+  os << "<Declaration>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</Declaration>" << std::endl;
+}
+void Printer::visit(Initializer& initializer) {
+  output_space();
+  os << "<Initializer>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</Initializer>" << std::endl;
+}
+
 void Printer::visit(CompoundStatement& compound_statement) {
   output_space();
   os << "<CompoundStatement>" << std::endl;
   indent();
-  auto& statement_list = compound_statement.get_statement_list();
-  for (auto& statement : statement_list) {
-    statement->accept(*this);
+  auto& block_item_list = compound_statement.get_block_item_list();
+  for (auto& block_item : block_item_list) {
+    block_item->accept(*this);
   }
   dedent();
   output_space();
@@ -205,6 +224,46 @@ void Printer::visit(StringLiteralExpression& string_literal_expression) {
   dedent();
   output_space();
   os << "</StringLiteralExpression>" << std::endl;
+}
+
+void Printer::visit(BinaryOperationExpression& binary_operation_expression) {
+  output_space();
+  os << "<BinaryOperationExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</BinaryOperationExpression>" << std::endl;
+}
+
+void Printer::visit(UnaryOperationExpression& unary_operation_expression) {
+  output_space();
+  os << "<UnaryOperationExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</UnaryOperationExpression>" << std::endl;
+}
+
+void Printer::visit(ConditionalExpression& conditional_expression) {
+  output_space();
+  os << "<ConditionalExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</ConditionalExpression>" << std::endl;
+}
+
+void Printer::visit(FunctionCall& function_call) {
+  output_space();
+  os << "<FunctionCall>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</FunctionCall>" << std::endl;
 }
 
 }  // namespace ntc

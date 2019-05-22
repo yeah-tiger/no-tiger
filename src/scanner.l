@@ -107,11 +107,25 @@ using token = ntc::Parser::token;
                     return token::IDENTIFIER;
                 }
 
+"&&"            { return token::AND_OP; }
+"||"            { return token::OR_OP; }
+"<="            { return token::LE_OP; }
+">="            { return token::GE_OP; }
+"=="            { return token::EQ_OP; }
+"!="            { return token::NE_OP; }
+""
+
 "+"             { return ('+'); }
 "-"             { return ('-'); }
 "*"             { return ('*'); }
 "/"             { return ('/'); }
+"="             { return ('='); }
+"<"             { return ('<'); }
+">"             { return ('>'); }
+"!"             { return ('!'); }
 
+":"             { return (':'); }
+"?"             { return ('?'); }
 ","             { return (','); }
 ";"             { return (';'); }
 "("			        { return ('('); }
