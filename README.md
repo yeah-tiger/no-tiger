@@ -38,7 +38,9 @@ sh build.sh
 
 - [x] Support function definition
 
-- [ ] Support expressions
+- [x] Support expressions
+
+- [ ] AST format output (XML/json)
 
 - [ ] LLVM codegen
 
