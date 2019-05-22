@@ -17,6 +17,10 @@ class Printer final : public Visitor {
   virtual void visit(ParameterDeclaration& parameter_declaration) override;
 
   virtual void visit(TypeSpecifier& type_specifier) override;
+  
+  virtual void visit(Declaration& declaration); 
+
+  virtual void visit(Initializer& initializer);
 
   virtual void visit(CompoundStatement& compound_statement) override;
 

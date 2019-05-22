@@ -11,6 +11,8 @@
 namespace ntc {
 // Language construct
 class AST;
+class BlockItem;
+class BlockItemList;
 class ExternalDeclaration;
 class TranslationUnit;
 class FunctionDefinition;
@@ -19,10 +21,11 @@ class Identifier;
 class ParameterDeclaration;
 class ParameterList;
 class TypeSpecifier;
+class Declaration;
+class Initializer;
 
 // Statement
 class Statement;
-class StatementList;
 class CompoundStatement;
 class ExpressionStatement;
 class JumpStatement;
@@ -50,7 +53,30 @@ class AST {
   virtual void accept(Visitor& vistior) = 0;
 };
 
-class Statement : public AST {
+class BlockItem : public AST {
+ public:
+  virtual ~BlockItem(){};
+};
+
+class BlockItemList : public AST {
+ public:
+  BlockItemList(std::unique_ptr<BlockItem>&& block_item) {
+    add_block_item(std::move(block_item));
+  }
+
+  void add_block_item(std::unique_ptr<BlockItem>&& block_item) {
+    block_item_list_.push_back(std::move(block_item));
+  }
+
+  virtual void accept(Visitor& visitor) override { assert(false); }
+
+  auto& get_block_item_list() { return block_item_list_; }
+
+ protected:
+  std::vector<std::unique_ptr<BlockItem>> block_item_list_;
+};
+
+class Statement : public BlockItem {
  public:
   virtual ~Statement() {}
 };
@@ -200,39 +226,49 @@ class TypeSpecifier final : public AST {
   type::Specifier specifier_;
 };
 
-// statement
-class StatementList final : public AST {
+class Declaration final : public BlockItem {
  public:
-  StatementList(std::unique_ptr<Statement>&& statement) {
-    add_statement(std::move(statement));
-  }
+  Declaration(std::unique_ptr<TypeSpecifier>&& type_specifier,
+              std::unique_ptr<Identifier>&& identifer,
+              std::unique_ptr<Initializer>&& initializer = nullptr)
+      : type_specifier_(std::move(type_specifier)),
+        identifer_(std::move(identifer)),
+        initializer_(std::move(initializer)) {}
 
-  virtual void accept(Visitor& visitor) override { assert(false); }
-
-  void add_statement(std::unique_ptr<Statement>&& statement) {
-    statement_list_.push_back(std::move(statement));
-  }
-
-  auto& get_statement_list() { return statement_list_; }
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
  protected:
-  std::vector<std::unique_ptr<Statement>> statement_list_;
+  std::unique_ptr<TypeSpecifier> type_specifier_;
+  std::unique_ptr<Identifier> identifer_;
+  std::unique_ptr<Initializer> initializer_;
 };
 
+class Initializer final : public AST {
+ public:
+  Initializer(std::unique_ptr<Expression>&& expression)
+      : expression_(std::move(expression)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<Expression> expression_;
+};
+
+// statement
 class CompoundStatement final : public Statement {
  public:
-  CompoundStatement(std::unique_ptr<StatementList>&& statement_list) {
-    if (statement_list != nullptr) {
-      statement_list_ = std::move(statement_list->get_statement_list());
+  CompoundStatement(std::unique_ptr<BlockItemList>&& block_item_list) {
+    if (block_item_list != nullptr) {
+      block_item_list_ = std::move(block_item_list->get_block_item_list());
     }
   }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
-  auto& get_statement_list() { return statement_list_; }
+  auto& get_block_item_list() { return block_item_list_; }
 
  protected:
-  std::vector<std::unique_ptr<Statement>> statement_list_;
+  std::vector<std::unique_ptr<BlockItem>> block_item_list_;
 };
 
 class ExpressionStatement final : public Statement {

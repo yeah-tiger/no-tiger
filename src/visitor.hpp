@@ -6,6 +6,8 @@ class DeclarationSpecifier;
 class Identifier;
 class ParameterDeclaration;
 class TypeSpecifier;
+class Declaration;
+class Initializer;
 
 class CompoundStatement;
 class ExpressionStatement;
@@ -31,6 +33,8 @@ class Visitor {
   virtual void visit(Identifier&) = 0;
   virtual void visit(ParameterDeclaration&) = 0;
   virtual void visit(TypeSpecifier&) = 0;
+  virtual void visit(Declaration&) = 0;
+  virtual void visit(Initializer&) = 0;
 
   virtual void visit(CompoundStatement&) = 0;
   virtual void visit(ExpressionStatement&) = 0;

@@ -18,6 +18,8 @@ namespace ntc{
   class Scanner;
   
   class AST;
+  class BlockItem;
+  class BlockItemList;
   class ExternalDeclaration;
   class TranslationUnit;
   class FunctionDefinition;
@@ -26,10 +28,11 @@ namespace ntc{
   class ParameterDeclaration;
   class ParameterList;
   class TypeSpecifier;
+  class Declaration;
+  class Initializer;
 
   // Statement
   class Statement;
-  class StatementList;
   class CompoundStatement;
   class ExpressionStatement;
   class JumpStatement;
@@ -93,6 +96,10 @@ using namespace ntc;
 %type <std::unique_ptr<DeclarationSpecifier>> declaration_specifiers
 %type <std::unique_ptr<ParameterDeclaration>> parameter_declaration
 %type <std::unique_ptr<ParameterList>> parameter_list
+%type <std::unique_ptr<BlockItem>> block_item
+%type <std::unique_ptr<BlockItemList>> block_item_list
+%type <std::unique_ptr<Initializer>> initializer
+%type <std::unique_ptr<Declaration>> declaration
 %type <std::unique_ptr<ConstantExpression>> constant_expression
 %type <std::unique_ptr<Expression>> expression primary_expression
 %type <std::unique_ptr<ExpressionStatement>> expression_statement
@@ -101,7 +108,6 @@ using namespace ntc;
 %type <std::unique_ptr<SelectionStatement>> selection_statement
 %type <std::unique_ptr<IterationStatement>> iteration_statement
 %type <std::unique_ptr<Statement>> statement
-%type <std::unique_ptr<StatementList>> statement_list
 %type <std::unique_ptr<FunctionDefinition>> function_definition
 %type <std::unique_ptr<ExternalDeclaration>> external_declaration
 %type <std::unique_ptr<TranslationUnit>> translation_unit
@@ -316,10 +322,10 @@ compound_statement
         //std::cout << "compound_statement nullptr" << std::endl;
         $$ = make_ast<CompoundStatement>(nullptr);
       }
-      | '{' statement_list '}'
+      | '{' block_item_list '}'
       {
-        //std::cout << "compound_statement statement_list" << std::endl;
-        $$ = make_ast<CompoundStatement>(std::move($2));
+        //std::cout << "compound_statement nullptr" << std::endl;
+        $$ = make_ast<CompoundStatement>(std::move($2)); 
       }
       ;
 
@@ -343,7 +349,8 @@ iteration_statement
       {
         $$ = make_ast<ForStatement>(std::move($3), std::move($4), std::move($6));
       }
-      | FOR '(' expression_statement expression_statement expression ')' statement {
+      | FOR '(' expression_statement expression_statement expression ')' statement 
+      {
         $$ = make_ast<ForStatement>(std::move($3), std::move($4), std::move($7), std::move($5));
       }
       ;
@@ -374,17 +381,47 @@ statement
       }
       ;
 
-statement_list
-      : statement
+
+initializer
+      : expression
       {
-        //std::cout << "statement_list statement" << std::endl;
-        $$ = make_ast<StatementList>(std::move($1));
+        $$ = make_ast<Initializer>(std::move($1));
       }
-      | statement_list statement
+      ;
+
+declaration
+      : type_specifier IDENTIFIER ';'
       {
-        //std::cout << "statement_list and" << std::endl;
+        auto identifier = make_ast<Identifier>($2);
+        $$ = make_ast<Declaration>(std::move($1), std::move(identifier));
+      }
+      | type_specifier IDENTIFIER '=' initializer ';'
+      {
+        auto identifier = make_ast<Identifier>($2);
+        $$ = make_ast<Declaration>(std::move($1), std::move(identifier), std::move($4));
+      }
+      ;
+
+block_item
+      : declaration
+      {
         $$ = std::move($1);
-        $$->add_statement(std::move($2));
+      }
+      | statement
+      {
+        $$ = std::move($1);
+      }
+      ;
+
+block_item_list
+      : block_item
+      {
+        $$ = make_ast<BlockItemList>(std::move($1));
+      }
+      | block_item_list block_item
+      {
+        $$ = std::move($1);
+        $$->add_block_item(std::move($2));
       }
       ;
 
