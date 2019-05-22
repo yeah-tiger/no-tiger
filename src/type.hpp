@@ -16,6 +16,14 @@ namespace type {
     SIGNED,
   };
 
+  enum class BinaryOp {
+
+  };
+
+  enum class UnaryOp {
+
+  };
+  
   std::string to_string(Specifier specifier);
 }
 

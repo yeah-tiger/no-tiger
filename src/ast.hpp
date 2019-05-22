@@ -12,18 +12,15 @@ namespace ntc {
 // Language construct
 class AST;
 class BlockItem;
-class BlockItemList;
 class ExternalDeclaration;
 class TranslationUnit;
 class FunctionDefinition;
 class DeclarationSpecifier;
 class Identifier;
 class ParameterDeclaration;
-class ParameterList;
 class TypeSpecifier;
 class Declaration;
 class Initializer;
-
 // Statement
 class Statement;
 class CompoundStatement;
@@ -46,6 +43,10 @@ class FloatExpression;
 class BooleanExpression;
 class CharacterExpression;
 class StringLiteralExpression;
+class BinaryOperationExpression;
+class UnaryOperationExpression;
+class ConditionalExpression;
+class FunctionCall;
 
 class AST {
  public:
@@ -58,23 +59,28 @@ class BlockItem : public AST {
   virtual ~BlockItem(){};
 };
 
-class BlockItemList : public AST {
+template <typename T>
+class ASTList final : public AST {
  public:
-  BlockItemList(std::unique_ptr<BlockItem>&& block_item) {
-    add_block_item(std::move(block_item));
-  }
+  ASTList(std::unique_ptr<T>&& item) { add_item(std::move(item)); }
 
-  void add_block_item(std::unique_ptr<BlockItem>&& block_item) {
-    block_item_list_.push_back(std::move(block_item));
+  void add_item(std::unique_ptr<T>&& item) {
+    item_list_.push_back(std::move(item));
   }
 
   virtual void accept(Visitor& visitor) override { assert(false); }
 
-  auto& get_block_item_list() { return block_item_list_; }
+  auto& get_item_list() { return item_list_; }
 
  protected:
-  std::vector<std::unique_ptr<BlockItem>> block_item_list_;
+ std::vector<std::unique_ptr<T>> item_list_;
 };
+
+using BlockItemList = ASTList<BlockItem>;
+
+using ParameterList = ASTList<ParameterDeclaration>;
+
+using ArgumentList = ASTList<Expression>;
 
 class Statement : public BlockItem {
  public:
@@ -126,25 +132,6 @@ class ParameterDeclaration final : public AST {
   std::unique_ptr<Identifier> identifier_;
 };
 
-class ParameterList final : public AST {
- public:
-  ParameterList(std::unique_ptr<ParameterDeclaration>&& parameter_declaration) {
-    add_parameter_declaration(std::move(parameter_declaration));
-  }
-
-  virtual void accept(Visitor& visitor) override { assert(false); }
-
-  void add_parameter_declaration(
-      std::unique_ptr<ParameterDeclaration>&& parameter_declaration) {
-    parameter_list_.push_back(std::move(parameter_declaration));
-  }
-
-  auto& get_parameter_list() { return parameter_list_; }
-
- protected:
-  std::vector<std::unique_ptr<ParameterDeclaration>> parameter_list_;
-};
-
 class FunctionDefinition final : public ExternalDeclaration {
  public:
   explicit FunctionDefinition(
@@ -156,7 +143,7 @@ class FunctionDefinition final : public ExternalDeclaration {
         identifier_(std::move(identifier)),
         compound_statement_(std::move(compound_statement)) {
     if (parameter_list != nullptr) {
-      parameter_list_ = std::move(parameter_list->get_parameter_list());
+      parameter_list_ = std::move(parameter_list->get_item_list());
     }
   }
 
@@ -259,7 +246,7 @@ class CompoundStatement final : public Statement {
  public:
   CompoundStatement(std::unique_ptr<BlockItemList>&& block_item_list) {
     if (block_item_list != nullptr) {
-      block_item_list_ = std::move(block_item_list->get_block_item_list());
+      block_item_list_ = std::move(block_item_list->get_item_list());
     }
   }
 
@@ -435,6 +422,69 @@ class StringLiteralExpression final : public ConstantExpression {
  protected:
   std::string val_;
 };
+
+class BinaryOperationExpression final : public Expression {
+ public:
+  BinaryOperationExpression(type::BinaryOp op_type,
+                            std::unique_ptr<Expression>&& lhs,
+                            std::unique_ptr<Expression>&& rhs)
+      : op_type_(op_type), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  type::BinaryOp op_type_;
+  std::unique_ptr<Expression> lhs_;
+  std::unique_ptr<Expression> rhs_;
+};
+
+class UnaryOperationExpression final : public Expression {
+  UnaryOperationExpression(type::UnaryOp op_type,
+                           std::unique_ptr<Expression>&& operand)
+
+      : op_type_(op_type), operand_(std::move(operand)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  type::UnaryOp op_type_;
+  std::unique_ptr<Expression> operand_;
+};
+
+class ConditionalExpression final : public Expression {
+ public:
+  ConditionalExpression(std::unique_ptr<Expression>&& cond_expression,
+                        std::unique_ptr<Expression>&& true_expression,
+                        std::unique_ptr<Expression>&& false_expression)
+      : cond_expression_(std::move(cond_expression)),
+        true_expression_(std::move(true_expression)),
+        false_expression_(std::move(false_expression)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<Expression> cond_expression_;
+  std::unique_ptr<Expression> true_expression_;
+  std::unique_ptr<Expression> false_expression_;
+};
+
+class FunctionCall final : public Expression {
+ public:
+  FunctionCall(std::unique_ptr<Expression>&& target,
+               std::unique_ptr<ArgumentList>&& argument_list)
+      : target_(std::move(target)) {
+    if (argument_list != nullptr) {
+      argument_list_ = std::move(argument_list->get_item_list());
+    }
+  }
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<Expression> target_;
+  std::vector<std::unique_ptr<Expression>> argument_list_;
+};
+
 // factory function
 template <typename AstType, typename... Args>
 std::unique_ptr<AstType> make_ast(Args&&... args) {

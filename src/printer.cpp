@@ -226,4 +226,44 @@ void Printer::visit(StringLiteralExpression& string_literal_expression) {
   os << "</StringLiteralExpression>" << std::endl;
 }
 
+void Printer::visit(BinaryOperationExpression& binary_operation_expression) {
+  output_space();
+  os << "<BinaryOperationExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</BinaryOperationExpression>" << std::endl;
+}
+
+void Printer::visit(UnaryOperationExpression& unary_operation_expression) {
+  output_space();
+  os << "<UnaryOperationExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</UnaryOperationExpression>" << std::endl;
+}
+
+void Printer::visit(ConditionalExpression& conditional_expression) {
+  output_space();
+  os << "<ConditionalExpression>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</ConditionalExpression>" << std::endl;
+}
+
+void Printer::visit(FunctionCall& function_call) {
+  output_space();
+  os << "<FunctionCall>" << std::endl;
+  indent();
+
+  dedent();
+  output_space();
+  os << "</FunctionCall>" << std::endl;
+}
+
 }  // namespace ntc

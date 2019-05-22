@@ -17,8 +17,8 @@ class Printer final : public Visitor {
   virtual void visit(ParameterDeclaration& parameter_declaration) override;
 
   virtual void visit(TypeSpecifier& type_specifier) override;
-  
-  virtual void visit(Declaration& declaration); 
+
+  virtual void visit(Declaration& declaration);
 
   virtual void visit(Initializer& initializer);
 
@@ -29,11 +29,11 @@ class Printer final : public Visitor {
   virtual void visit(ReturnStatement& return_statement) override;
 
   virtual void visit(BreakStatement& break_statement) override;
-  
+
   virtual void visit(ContinueStatement& continue_statement) override;
-  
+
   virtual void visit(IfStatement& if_statement) override;
-  
+
   virtual void visit(WhileStatement& while_statement) override;
 
   virtual void visit(ForStatement& for_statement) override;
@@ -48,6 +48,14 @@ class Printer final : public Visitor {
 
   virtual void visit(
       StringLiteralExpression& string_literal_expression) override;
+  
+  virtual void visit(BinaryOperationExpression& binary_operation_expression);
+
+  virtual void visit(UnaryOperationExpression& unary_operation_expression);
+
+  virtual void visit(ConditionalExpression& conditional_expression);
+
+  virtual void visit(FunctionCall& function_call);
 
  private:
   void indent(int cnt = 2);

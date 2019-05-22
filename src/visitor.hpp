@@ -23,6 +23,10 @@ class FloatExpression;
 class BooleanExpression;
 class CharacterExpression;
 class StringLiteralExpression;
+class BinaryOperationExpression;
+class UnaryOperationExpression;
+class ConditionalExpression;
+class FunctionCall;
 
 class Visitor {
  public:
@@ -51,5 +55,10 @@ class Visitor {
   virtual void visit(BooleanExpression&) = 0;
   virtual void visit(CharacterExpression&) = 0;
   virtual void visit(StringLiteralExpression&) = 0;
+
+  virtual void visit(BinaryOperationExpression&) = 0;
+  virtual void visit(UnaryOperationExpression&) = 0;
+  virtual void visit(ConditionalExpression&) = 0;
+  virtual void visit(FunctionCall&) = 0;
 };
 }  // namespace ntc

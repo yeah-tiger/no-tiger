@@ -19,14 +19,12 @@ namespace ntc{
   
   class AST;
   class BlockItem;
-  class BlockItemList;
   class ExternalDeclaration;
   class TranslationUnit;
   class FunctionDefinition;
   class DeclarationSpecifier;
   class Identifier;
   class ParameterDeclaration;
-  class ParameterList;
   class TypeSpecifier;
   class Declaration;
   class Initializer;
@@ -54,6 +52,11 @@ namespace ntc{
   class CharacterExpression;
   class StringLiteralExpression;
 
+  template <typename T> class ASTList;
+  
+  using BlockItemList = ASTList<BlockItem>;
+  using ParameterList = ASTList<ParameterDeclaration>;
+  using ArgumentList = ASTList<Expression>;
 }
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -219,7 +222,7 @@ parameter_list
       {
         //std::cout << "parameter_list and" << std::endl;
         $$ = std::move($1);
-        $$->add_parameter_declaration(std::move($3));
+        $$->add_item(std::move($3));
       }
       ;
 
@@ -273,11 +276,13 @@ primary_expression
         $$ = std::move($2);
       }
       ;
-
+/***
+assignment_expression
+      | 
+***/
 expression
       : primary_expression
       {
-        //std::cout << "expression primary_expression" << std::endl;
         $$ = std::move($1);
       }
       ;
@@ -421,7 +426,7 @@ block_item_list
       | block_item_list block_item
       {
         $$ = std::move($1);
-        $$->add_block_item(std::move($2));
+        $$->add_item(std::move($2));
       }
       ;
 
