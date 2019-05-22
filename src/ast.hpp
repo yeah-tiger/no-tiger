@@ -439,6 +439,7 @@ class BinaryOperationExpression final : public Expression {
 };
 
 class UnaryOperationExpression final : public Expression {
+  public:
   UnaryOperationExpression(type::UnaryOp op_type,
                            std::unique_ptr<Expression>&& operand)
 

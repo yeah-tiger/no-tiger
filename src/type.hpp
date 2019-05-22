@@ -17,11 +17,26 @@ namespace type {
   };
 
   enum class BinaryOp {
-
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    MOD,
+    LESS,
+    GREATER,
+    LESS_EQUAL,
+    GREATER_EQUAL,
+    EQUAL,
+    NOT_EQUAL,
+    LOGIC_OR,
+    LOGIC_AND,
+    ASSIGN
   };
 
   enum class UnaryOp {
-
+    POSITIVIZE,
+    NEGATE,
+    LOGIC_NOT
   };
 
   enum class AssginOp {

@@ -51,6 +51,10 @@ namespace ntc{
   class BooleanExpression;
   class CharacterExpression;
   class StringLiteralExpression;
+  class BinaryOperationExpression;
+  class UnaryOperationExpression;
+  class ConditionalExpression;
+  class FunctionCall;
 
   template <typename T> class ASTList;
   
@@ -75,6 +79,7 @@ namespace ntc{
 %code {
 #include "ast.hpp"
 #include "driver.hpp"
+#include "type.hpp"
 #undef yylex
 #define yylex scanner.yylex
 using namespace ntc;
@@ -90,6 +95,7 @@ using namespace ntc;
 %token INTEGER REAL BOOLEAN CHARACTER STRING_LITERAL
 %token END 0 "end of file"
 %token RETURN IF ELSE WHILE FOR BREAK CONTINUE
+%token AND_OP OR_OP LE_OP GE_OP NE_OP EQ_OP
 
 %type <int> INTEGER
 %type <double> REAL
@@ -103,8 +109,9 @@ using namespace ntc;
 %type <std::unique_ptr<BlockItemList>> block_item_list
 %type <std::unique_ptr<Initializer>> initializer
 %type <std::unique_ptr<Declaration>> declaration
+%type <std::unique_ptr<ArgumentList>> argument_expression_list
 %type <std::unique_ptr<ConstantExpression>> constant_expression
-%type <std::unique_ptr<Expression>> expression primary_expression
+%type <std::unique_ptr<Expression>> expression primary_expression postfix_expression unary_expression cast_expression multiplicative_expression additive_expression shift_expression relational_expression equality_expression and_expression exclusive_or_expression inclusive_or_expression logical_and_expression logical_or_expression conditional_expression assignment_expression
 %type <std::unique_ptr<ExpressionStatement>> expression_statement
 %type <std::unique_ptr<CompoundStatement>> compound_statement
 %type <std::unique_ptr<JumpStatement>> jump_statement
@@ -237,10 +244,6 @@ constant_expression
       }
       ;
 
-argument_expression_list
-      : assignment_expression
-      | argument_expression_list ',' assignment_expression
-      ;
 
 primary_expression
       : constant_expression
@@ -258,6 +261,18 @@ primary_expression
       }
       ;
 
+argument_expression_list
+      : assignment_expression
+      {
+        $$ = make_ast<ArgumentList>(std::move($1));
+      }
+      | argument_expression_list ',' assignment_expression
+      {
+        $$ = std::move($1);
+        $$->add_item(std::move($3));
+      }
+      ;
+
 postfix_expression
       : primary_expression
       {
@@ -265,7 +280,13 @@ postfix_expression
         // TODO: no support for array, pointer, struct now
       }
       | postfix_expression '(' ')'
+      {
+        $$ = make_ast<FunctionCall>(std::move($1), nullptr);
+      }
       | postfix_expression '(' argument_expression_list ')'
+      {
+        $$ = make_ast<FunctionCall>(std::move($1), std::move($3));
+      }
       ;
 
 unary_expression
@@ -273,7 +294,18 @@ unary_expression
       {
         $$ = std::move($1);
       }
-      | unary_operator cast_expression
+      | '+' cast_expression
+      {
+        $$ = make_ast<UnaryOperationExpression>(ntc::type::UnaryOp::POSITIVIZE, std::move($2));
+      }
+      | '-' cast_expression
+      {
+        $$ = make_ast<UnaryOperationExpression>(ntc::type::UnaryOp::NEGATE, std::move($2));
+      }
+      | '!' cast_expression
+      {
+        $$ = make_ast<UnaryOperationExpression>(ntc::type::UnaryOp::LOGIC_NOT, std::move($2));
+      }
       ;
 
 cast_expression
@@ -290,8 +322,17 @@ multiplicative_expression
         $$ = std::move($1);
       }
       | multiplicative_expression '*' cast_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::MUL, std::move($1), std::move($3));
+      }
       | multiplicative_expression '/' cast_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::DIV, std::move($1), std::move($3));
+      }
       | multiplicative_expression '%' cast_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::MOD, std::move($1), std::move($3));
+      }
       ;
 
 
@@ -301,7 +342,13 @@ additive_expression
         $$ = std::move($1);
       }
       | additive_expression '+' multiplicative_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ADD, std::move($1), std::move($3));
+      }
       | additive_expression '-' multiplicative_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::SUB, std::move($1), std::move($3));
+      }
       ;
 
 shift_expression
@@ -318,9 +365,21 @@ relational_expression
         $$ = std::move($1);
       }
       | relational_expression '<' shift_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::LESS, std::move($1), std::move($3));
+      }
       | relational_expression '>' shift_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::GREATER, std::move($1), std::move($3));
+      }
       | relational_expression LE_OP shift_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::LESS_EQUAL, std::move($1), std::move($3));
+      }
       | relational_expression GE_OP shift_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::GREATER_EQUAL, std::move($1), std::move($3));
+      }
       ;
 
 equality_expression
@@ -329,7 +388,13 @@ equality_expression
         $$ = std::move($1);
       }
       | equality_expression EQ_OP relational_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::EQUAL, std::move($1), std::move($3));
+      }
       | equality_expression NE_OP relational_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::NOT_EQUAL, std::move($1), std::move($3));
+      }
       ;
 
 and_expression
@@ -337,7 +402,6 @@ and_expression
       {
         $$ = std::move($1);
       }
-      | and_expression '&' equality_expression
       ;
 
 exclusive_or_expression
@@ -345,7 +409,6 @@ exclusive_or_expression
       {
         $$ = std::move($1);
       }
-      | exclusive_or_expression '^' and_expression
       ;
 
 inclusive_or_expression
@@ -353,42 +416,51 @@ inclusive_or_expression
       {
         $$ = std::move($1);
       }
-      | inclusive_or_expression '|' exclusive_or_expression
       ;
 
-logic_and_expression
+logical_and_expression
       : inclusive_or_expression
       {
         $$ = std::move($1);
       }
-      | logic_and_expression AND_OP inclusive_or_expression
+      | logical_and_expression AND_OP inclusive_or_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::LOGIC_AND, std::move($1), std::move($3));
+      }
       ;
 
 
-logic_or_expression
-      : logic_and_expression
+logical_or_expression
+      : logical_and_expression
       {
         $$ = std::move($1);
       }
-      | logical_or_expression OR_OP logic_and_expression
+      | logical_or_expression OR_OP logical_and_expression
       {
-        // binaryOp
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::LOGIC_OR, std::move($1), std::move($3));
       }
       ;
 
 conditional_expression
-      : logic_or_expression
+      : logical_or_expression
       {
         $$ = std::move($1);
       }
-      | logic_or_expression '?' expression ':' conditional_expression
+      | logical_or_expression '?' expression ':' conditional_expression
+      {
+        $$ = make_ast<ConditionalExpression>(std::move($1), std::move($3), std::move($5));
+      }
+      ;
 
 assignment_expression
       : conditional_expression
       {
         $$ = std::move($1);
       }
-      | unary_expression assignment_operator assignment_expression
+      | unary_expression '=' assignment_expression
+      {
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move($1), std::move($3));
+      }
       ;
 
 
