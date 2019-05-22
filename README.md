@@ -28,13 +28,13 @@ sh build.sh
 
 - [x] C++ style Flex/Bison generated scanner/parser
 
-- [ ] support `main`
+- [x] support `main` (at exp1.c)
 
-- [ ] basic arithmetic and variable declaration and definition
+- [ ] basic arithmetic and variable definition
 
 - [ ] Support basic control flow
 
-- [ ] Support function
+- [x] Support function
 
 - [ ] Support builtin array
 
@@ -42,7 +42,6 @@ sh build.sh
 
 - [ ] Support builtin I/O functions
 
-- [ ] For simplicity, I think we should not support pointer for now
 
 ## Built With
 

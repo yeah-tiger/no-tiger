@@ -49,6 +49,12 @@ using token = ntc::Parser::token;
 "//".*          { continue; }
 
 "return"        { return token::RETURN; }
+"if"            { return token::IF; }
+"else"          { return token::ELSE; }
+"while"         { return token::WHILE; }
+"for"           { return token::FOR; }
+"break"         { return token::BREAK; }
+"continue"      { return token::CONTINUE; }
 
 "int"           { return token::INT; }
 "float"         { return token::FLOAT; }
@@ -84,7 +90,7 @@ using token = ntc::Parser::token;
                     return token::REAL;
                 }
 
-'(\\.|[^\\'])+' {
+'(\\.|[^\\'])*' {
                     yytext[yyleng - 1] = 0;
                     yylval->build(std::string(yytext + 1));
                     return token::CHARACTER;

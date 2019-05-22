@@ -24,6 +24,16 @@ class Printer final : public Visitor {
 
   virtual void visit(ReturnStatement& return_statement) override;
 
+  virtual void visit(BreakStatement& break_statement) override;
+  
+  virtual void visit(ContinueStatement& continue_statement) override;
+  
+  virtual void visit(IfStatement& if_statement) override;
+  
+  virtual void visit(WhileStatement& while_statement) override;
+
+  virtual void visit(ForStatement& for_statement) override;
+
   virtual void visit(IntegerExpression& integer_expression) override;
 
   virtual void visit(FloatExpression& float_expression) override;
@@ -32,7 +42,8 @@ class Printer final : public Visitor {
 
   virtual void visit(CharacterExpression& character_expression) override;
 
-  virtual void visit(StringLiteralExpression& string_literal_expression) override;
+  virtual void visit(
+      StringLiteralExpression& string_literal_expression) override;
 
  private:
   void indent(int cnt = 2);

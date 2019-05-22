@@ -27,12 +27,22 @@ namespace ntc{
   class ParameterList;
   class TypeSpecifier;
 
+  // Statement
   class Statement;
   class StatementList;
   class CompoundStatement;
   class ExpressionStatement;
+  class JumpStatement;
   class ReturnStatement;
+  class BreakStatement;
+  class ContinueStatement;
+  class SelectionStatement;
+  class IfStatement;
+  class IterationStatement;
+  class WhileStatement;
+  class ForStatement;
 
+  // Expression
   class Expression;
   class ConstantExpression;
   class IntegerExpression;
@@ -73,7 +83,7 @@ using namespace ntc;
 %token CONST
 %token INTEGER REAL BOOLEAN CHARACTER STRING_LITERAL
 %token END 0 "end of file"
-%token RETURN
+%token RETURN IF ELSE WHILE FOR BREAK CONTINUE
 
 %type <int> INTEGER
 %type <double> REAL
@@ -86,8 +96,10 @@ using namespace ntc;
 %type <std::unique_ptr<ConstantExpression>> constant_expression
 %type <std::unique_ptr<Expression>> expression primary_expression
 %type <std::unique_ptr<ExpressionStatement>> expression_statement
-%type <std::unique_ptr<ReturnStatement>> return_statment
 %type <std::unique_ptr<CompoundStatement>> compound_statement
+%type <std::unique_ptr<JumpStatement>> jump_statement
+%type <std::unique_ptr<SelectionStatement>> selection_statement
+%type <std::unique_ptr<IterationStatement>> iteration_statement
 %type <std::unique_ptr<Statement>> statement
 %type <std::unique_ptr<StatementList>> statement_list
 %type <std::unique_ptr<FunctionDefinition>> function_definition
@@ -226,6 +238,8 @@ constant_expression
         //std::cout << "constant_expression CHARACTER" << std::endl;
         if (CharacterExpression::check_character($1)) {
           $$ = make_ast<CharacterExpression>($1[0]);
+        } else if ($1.length() == 0) {
+          error(@1, "empty character constant");
         } else {
           error(@1, "multi-character character constant");
         }
@@ -273,8 +287,9 @@ expression_statement
         //std::cout << "expression_statement expression" << std::endl;
         $$ = make_ast<ExpressionStatement>(std::move($1));
       }
+      ;
 
-return_statment
+jump_statement
       : RETURN expression ';'
       {
         //std::cout << "return_statment expression" << std::endl;
@@ -283,7 +298,15 @@ return_statment
       | RETURN ';'
       {
         //std::cout << "return_statment nullptr" << std::endl;
-        $$ = make_ast<ReturnStatement>(nullptr);
+        $$ = make_ast<ReturnStatement>();
+      }
+      | BREAK ';'
+      {
+        $$ = make_ast<BreakStatement>();
+      }
+      | CONTINUE ';'
+      {
+        $$ = make_ast<ContinueStatement>();
       }
       ;
 
@@ -300,8 +323,33 @@ compound_statement
       }
       ;
 
+selection_statement
+      : IF '(' expression ')' '{' statement '}'
+      {
+        $$ = make_ast<IfStatement>(std::move($3), std::move($6));
+      }
+      | IF '(' expression ')' '{' statement '}' ELSE '{' statement '}'
+      {
+        $$ = make_ast<IfStatement>(std::move($3), std::move($6), std::move($10));
+      }
+      ;
+
+iteration_statement
+      : WHILE '(' expression ')' statement
+      {
+        $$ = make_ast<WhileStatement>(std::move($3), std::move($5));
+      }
+      | FOR '(' expression_statement expression_statement ')' statement
+      {
+        $$ = make_ast<ForStatement>(std::move($3), std::move($4), std::move($6));
+      }
+      | FOR '(' expression_statement expression_statement expression ')' statement {
+        $$ = make_ast<ForStatement>(std::move($3), std::move($4), std::move($7), std::move($5));
+      }
+      ;
+
 statement
-      : return_statment
+      : jump_statement
       {
         //std::cout << "statement return_statment" << std::endl;
         $$ = std::move($1);
@@ -314,6 +362,14 @@ statement
       | expression_statement
       {
         //std::cout << "statement expression_statement" << std::endl;
+        $$ = std::move($1);
+      }
+      | selection_statement
+      {
+        $$ = std::move($1);
+      }
+      | iteration_statement
+      {
         $$ = std::move($1);
       }
       ;
