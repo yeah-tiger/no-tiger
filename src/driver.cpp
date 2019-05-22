@@ -13,16 +13,16 @@ bool Driver::parse_file(const std::string& filename) {
   }
   Scanner scanner(&in);
   Parser parser(scanner, *this);
-  int res = parser.parse();
+  int res = 1;
+  try {
+    res = parser.parse();
+  } catch (std::logic_error& e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
   return res == 0;
 }
 
 ProgramContext& Driver::context() { return _context; }
-
-void Driver::error(const std::string& msg) { std::cerr << msg << std::endl; }
-
-void Driver::error(const class location& loc, const std::string& msg) {
-  std::cerr << loc << ": " << msg << std::endl;
-}
 
 }  // namespace ntc

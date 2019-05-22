@@ -2,12 +2,14 @@
 #pragma once
 #include <cassert>
 #include <deque>
+#include <iostream>
 #include <memory>
 #include <vector>
 
 #include "type.hpp"
 #include "visitor.hpp"
 namespace ntc {
+// Language construct
 class AST;
 class ExternalDeclaration;
 class TranslationUnit;
@@ -18,17 +20,29 @@ class ParameterDeclaration;
 class ParameterList;
 class TypeSpecifier;
 
+// Statement
 class Statement;
 class StatementList;
 class CompoundStatement;
 class ExpressionStatement;
+class JumpStatement;
 class ReturnStatement;
+class BreakStatement;
+class ContinueStatement;
+class SelectionStatement;
+class IfStatement;
+class IterationStatement;
+class WhileStatement;
+class ForStatement;
 
+// Expression
 class Expression;
 class ConstantExpression;
 class IntegerExpression;
 class FloatExpression;
 class BooleanExpression;
+class CharacterExpression;
+class StringLiteralExpression;
 
 class AST {
  public:
@@ -47,7 +61,7 @@ class Expression : public Statement {
 };
 
 class ExternalDeclaration : public AST {
-  public:
+ public:
   virtual ~ExternalDeclaration() {}
 };
 
@@ -73,8 +87,9 @@ class TranslationUnit final : public AST {
 
 class ParameterDeclaration final : public AST {
  public:
-  ParameterDeclaration(std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
-                       std::unique_ptr<Identifier>&& identifier)
+  ParameterDeclaration(
+      std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
+      std::unique_ptr<Identifier>&& identifier)
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)) {}
 
@@ -98,7 +113,7 @@ class ParameterList final : public AST {
     parameter_list_.push_back(std::move(parameter_declaration));
   }
 
-  auto& get_parameter_list() {return parameter_list_; }
+  auto& get_parameter_list() { return parameter_list_; }
 
  protected:
   std::vector<std::unique_ptr<ParameterDeclaration>> parameter_list_;
@@ -114,18 +129,18 @@ class FunctionDefinition final : public ExternalDeclaration {
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)),
         compound_statement_(std::move(compound_statement)) {
-          if (parameter_list != nullptr) {
-            parameter_list_ = std::move(parameter_list->get_parameter_list());
-          }
-        }
+    if (parameter_list != nullptr) {
+      parameter_list_ = std::move(parameter_list->get_parameter_list());
+    }
+  }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
-  auto& get_declaration_specifier()  { return declaration_specifier_; }
+  auto& get_declaration_specifier() { return declaration_specifier_; }
 
   auto& get_identifier() { return identifier_; }
 
-  auto& get_parameter_list()  { return parameter_list_; }
+  auto& get_parameter_list() { return parameter_list_; }
 
   auto& get_compound_statement() { return compound_statement_; }
 
@@ -173,7 +188,6 @@ class Identifier final : public Expression {
   std::string name_;
 };
 
-
 class TypeSpecifier final : public AST {
  public:
   TypeSpecifier(type::Specifier specififer) : specifier_(specififer) {}
@@ -186,6 +200,7 @@ class TypeSpecifier final : public AST {
   type::Specifier specifier_;
 };
 
+// statement
 class StatementList final : public AST {
  public:
   StatementList(std::unique_ptr<Statement>&& statement) {
@@ -198,19 +213,26 @@ class StatementList final : public AST {
     statement_list_.push_back(std::move(statement));
   }
 
+  auto& get_statement_list() { return statement_list_; }
+
  protected:
   std::vector<std::unique_ptr<Statement>> statement_list_;
 };
 
 class CompoundStatement final : public Statement {
  public:
-  CompoundStatement(std::unique_ptr<StatementList>&& statement_list)
-      : statement_list_(std::move(statement_list)) {}
+  CompoundStatement(std::unique_ptr<StatementList>&& statement_list) {
+    if (statement_list != nullptr) {
+      statement_list_ = std::move(statement_list->get_statement_list());
+    }
+  }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_statement_list() { return statement_list_; }
+
  protected:
-  std::unique_ptr<StatementList>&& statement_list_;
+  std::vector<std::unique_ptr<Statement>> statement_list_;
 };
 
 class ExpressionStatement final : public Statement {
@@ -224,9 +246,14 @@ class ExpressionStatement final : public Statement {
   std::unique_ptr<Expression> expression_;
 };
 
-class ReturnStatement final : public Statement {
+class JumpStatement : public Statement {
  public:
-  ReturnStatement(std::unique_ptr<Expression>&& expression)
+  virtual ~JumpStatement() {}
+};
+
+class ReturnStatement final : public JumpStatement {
+ public:
+  ReturnStatement(std::unique_ptr<Expression>&& expression = nullptr)
       : expression_(std::move(expression)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
@@ -235,7 +262,89 @@ class ReturnStatement final : public Statement {
   std::unique_ptr<Expression> expression_;
 };
 
-class ConstantExpression : public Expression {};
+class BreakStatement final : public JumpStatement {
+ public:
+  BreakStatement() = default;
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+};
+
+class ContinueStatement final : public JumpStatement {
+ public:
+  ContinueStatement() = default;
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+};
+
+class SelectionStatement : public Statement {
+ public:
+  virtual ~SelectionStatement() {}
+};
+
+class IfStatement final : public SelectionStatement {
+ public:
+  IfStatement(std::unique_ptr<Expression>&& if_expression,
+              std::unique_ptr<Statement>&& then_statement,
+              std::unique_ptr<Statement>&& else_statement = nullptr)
+      : if_expression_(std::move(if_expression)),
+        then_statement_(std::move(then_statement)),
+        else_statement_(std::move(else_statement)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<Expression> if_expression_;
+  std::unique_ptr<Statement> then_statement_;
+  std::unique_ptr<Statement> else_statement_;
+};
+
+class IterationStatement : public Statement {
+ public:
+  virtual ~IterationStatement() {}
+};
+
+class WhileStatement final : public IterationStatement {
+ public:
+  WhileStatement(std::unique_ptr<Expression>&& while_expression,
+                 std::unique_ptr<Statement>&& loop_statement)
+      : while_expression_(std::move(while_expression)),
+        loop_statement_(std::move(loop_statement)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<Expression> while_expression_;
+  std::unique_ptr<Statement> loop_statement_;
+};
+
+class ForStatement final : public IterationStatement {
+ public:
+  ForStatement(std::unique_ptr<ExpressionStatement>&& init_clause,
+               std::unique_ptr<ExpressionStatement>&& cond_expression,
+               std::unique_ptr<Statement>&& loop_statement,
+               std::unique_ptr<Expression>&& iteraion_expression = nullptr)
+      : init_clause_(std::move(init_clause)),
+        cond_expression_(std::move(cond_expression)),
+        iteraion_expression_(std::move(iteraion_expression)),
+        loop_statement_(std::move(loop_statement)) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::unique_ptr<ExpressionStatement> init_clause_;
+  std::unique_ptr<ExpressionStatement> cond_expression_;
+  std::unique_ptr<Expression> iteraion_expression_;
+  std::unique_ptr<Statement> loop_statement_;
+};
+
+/* Expression */
+class ConstantExpression : public Expression {
+ public:
+  virtual ~ConstantExpression() {}
+};
 
 class IntegerExpression final : public ConstantExpression {
  public:
@@ -252,7 +361,7 @@ class FloatExpression final : public ConstantExpression {
   FloatExpression(double val) : val_(val) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
-  
+
  protected:
   double val_;
 };
@@ -267,6 +376,29 @@ class BooleanExpression final : public ConstantExpression {
   bool val_;
 };
 
+class CharacterExpression final : public ConstantExpression {
+ public:
+  CharacterExpression(char val) : val_(val) {}
+
+  static bool check_character(const std::string& input) {
+    return input.length() == 1;
+  }
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  char val_;
+};
+
+class StringLiteralExpression final : public ConstantExpression {
+ public:
+  StringLiteralExpression(const std::string& val) : val_(val) {}
+
+  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+ protected:
+  std::string val_;
+};
 // factory function
 template <typename AstType, typename... Args>
 std::unique_ptr<AstType> make_ast(Args&&... args) {

@@ -1,5 +1,7 @@
 # no-tiger
-Not Ordinary Tiger Language
+Not Ordinary Tiger Language 
+
+[![Build Status](https://travis-ci.com/TH3CHARLie/no-tiger.svg?branch=master)](https://travis-ci.com/TH3CHARLie/no-tiger)
 
 ## Introduction
 
@@ -28,13 +30,15 @@ sh build.sh
 
 - [x] C++ style Flex/Bison generated scanner/parser
 
-- [ ] support `main`
+- [x] support `main` (at exp1.c)
 
-- [ ] basic arithmetic and variable declaration and definition
+- [x] Support basic control flow: ```if while for break continue ```
 
-- [ ] Support basic control flow
+- [x] Support function definition
 
-- [ ] Support function
+- [ ] Support expressions
+
+- [ ] LLVM codegen
 
 - [ ] Support builtin array
 
@@ -42,7 +46,6 @@ sh build.sh
 
 - [ ] Support builtin I/O functions
 
-- [ ] For simplicity, I think we should not support pointer for now
 
 ## Built With
 
