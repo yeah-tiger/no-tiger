@@ -1,5 +1,7 @@
 # no-tiger
-Not Ordinary Tiger Language
+Not Ordinary Tiger Language 
+
+[![Build Status](https://travis-ci.com/TH3CHARLie/no-tiger.svg?branch=master)](https://travis-ci.com/TH3CHARLie/no-tiger)
 
 ## Introduction
 
@@ -30,11 +32,13 @@ sh build.sh
 
 - [x] support `main` (at exp1.c)
 
-- [ ] basic arithmetic and variable definition
+- [x] Support basic control flow: ```if while for break continue ```
 
-- [ ] Support basic control flow
+- [x] Support function definition
 
-- [x] Support function
+- [ ] Support expressions
+
+- [ ] LLVM codegen
 
 - [ ] Support builtin array
 
