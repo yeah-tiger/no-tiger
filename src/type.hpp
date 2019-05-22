@@ -23,6 +23,10 @@ namespace type {
   enum class UnaryOp {
 
   };
+
+  enum class AssginOp {
+
+  };
   
   std::string to_string(Specifier specifier);
 }

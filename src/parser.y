@@ -121,59 +121,48 @@ using namespace ntc;
 start
       : translation_unit END
       {
-        //std::cout << "start" << std::endl;
         driver.context().get_start() = std::move($1);
       }
 
 type_specifier
       : INT
       {
-        //std::cout << "type_specifier int" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::INT);
       }
       | FLOAT
       {
-        //std::cout << "type_specifier float" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::FLOAT);
       }
       | DOUBLE
       {
-        //std::cout << "type_specifier double" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::DOUBLE);
       }
       | CHAR
       {
-        //std::cout << "type_specifier CHAR" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::CHAR);
       }
       | SHORT
       {
-        //std::cout << "type_specifier SHORT" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::SHORT);
       }
       | LONG
       {
-        //std::cout << "type_specifier LONG" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::LONG);
       }
       | VOID
       {
-        //std::cout << "type_specifier VOID" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::VOID);
       }
       | UNSIGNED
       {
-        //std::cout << "type_specifier UNSIGNED" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::UNSIGNED);
       }
       | SIGNED
       {
-        //std::cout << "type_specifier SIGNED" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::SIGNED);
       }
       | BOOL
       {
-        //std::cout << "type_specifier BOOL" << std::endl;
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::BOOL);
       }
       ;
@@ -181,23 +170,19 @@ type_specifier
 declaration_specifiers
       : type_specifier
       {
-        //std::cout << "declaration_specifiers type_specifier" << std::endl;
         $$ = make_ast<DeclarationSpecifier>(std::move($1));
       }
       | type_specifier declaration_specifiers
       {
-        //std::cout << "declaration_specifiers type_specifier and" << std::endl;
         $$ = std::move($2);
         $$->add_type_specifier(std::move($1));
       }
       | CONST
       {
-        //std::cout << "declaration_specifiers CONST" << std::endl;
         $$ = make_ast<DeclarationSpecifier>(true);
       }
       | CONST declaration_specifiers
       {
-        //std::cout << "declaration_specifiers CONST and " << std::endl;
         $$ = std::move($2);
         $$->set_const(true);
       }
@@ -206,7 +191,6 @@ declaration_specifiers
 parameter_declaration
       : declaration_specifiers IDENTIFIER
       {
-        //std::cout << "parameter_declaration IDENTIFIER" << std::endl;
         auto identifier = make_ast<Identifier>($2);
         $$ = make_ast<ParameterDeclaration>(std::move($1), std::move(identifier));
       }
@@ -215,12 +199,10 @@ parameter_declaration
 parameter_list
       : parameter_declaration
       {
-        //std::cout << "parameter_list parameter_declaration" << std::endl;
         $$ = make_ast<ParameterList>(std::move($1));
       }
       | parameter_list ',' parameter_declaration
       {
-        //std::cout << "parameter_list and" << std::endl;
         $$ = std::move($1);
         $$->add_item(std::move($3));
       }
@@ -229,22 +211,18 @@ parameter_list
 constant_expression
       : INTEGER
       {
-        //std::cout << "constant_expression INTEGER" << std::endl;
         $$ = make_ast<IntegerExpression>($1);
       }
       | REAL
       {
-        //std::cout << "constant_expression REAL" << std::endl;
         $$ = make_ast<FloatExpression>($1);
       }
       | BOOLEAN
       {
-        //std::cout << "constant_expression BOOLEAN" << std::endl;
         $$ = make_ast<BooleanExpression>($1);
       }
       | CHARACTER
       {
-        //std::cout << "constant_expression CHARACTER" << std::endl;
         if (CharacterExpression::check_character($1)) {
           $$ = make_ast<CharacterExpression>($1[0]);
         } else if ($1.length() == 0) {
@@ -255,11 +233,14 @@ constant_expression
       }
       | STRING_LITERAL
       {
-        //std::cout << "constant_expression STRING_LITERAL" << std::endl;
         $$ = make_ast<StringLiteralExpression>($1);
       }
       ;
 
+argument_expression_list
+      : assignment_expression
+      | argument_expression_list ',' assignment_expression
+      ;
 
 primary_expression
       : constant_expression
@@ -276,12 +257,143 @@ primary_expression
         $$ = std::move($2);
       }
       ;
-/***
-assignment_expression
-      | 
-***/
-expression
+
+postfix_expression
       : primary_expression
+      {
+        $$ = std::move($1);
+        // TODO: no support for array, pointer, struct now
+      }
+      | postfix_expression '(' ')'
+      | postfix_expression '(' argument_expression_list ')'
+      ;
+
+unary_expression
+      : postfix_expression
+      {
+        $$ = std::move($1);
+      }
+      | unary_operator cast_expression
+      ;
+
+cast_expression
+      : unary_expression
+      {
+        $$ = std::move($1);
+        // TODO: no support for cast now
+      }
+      ;
+
+multiplicative_expression
+      : cast_expression
+      {
+        $$ = std::move($1);
+      }
+      | multiplicative_expression '*' cast_expression
+      | multiplicative_expression '/' cast_expression
+      | multiplicative_expression '%' cast_expression
+      ;
+
+
+additive_expression
+      : multiplicative_expression
+      {
+        $$ = std::move($1);
+      }
+      | additive_expression '+' multiplicative_expression
+      | additive_expression '-' multiplicative_expression
+      ;
+
+shift_expression
+      : additive_expression
+      {
+        $$ = std::move($1);
+        // TODO: no support for bitshift now
+      }
+      ;
+
+relational_expression
+      : shift_expression 
+      {
+        $$ = std::move($1);
+      }
+      | relational_expression '<' shift_expression
+      | relational_expression '>' shift_expression
+      | relational_expression LE_OP shift_expression
+      | relational_expression GE_OP shift_expression
+      ;
+
+equality_expression
+      : relational_expression
+      {
+        $$ = std::move($1);
+      }
+      | equality_expression EQ_OP relational_expression
+      | equality_expression NE_OP relational_expression
+      ;
+
+and_expression
+      : equality_expression
+      {
+        $$ = std::move($1);
+      }
+      | and_expression '&' equality_expression
+      ;
+
+exclusive_or_expression
+      : and_expression
+      {
+        $$ = std::move($1);
+      }
+      | exclusive_or_expression '^' and_expression
+      ;
+
+inclusive_or_expression
+      : exclusive_or_expression
+      {
+        $$ = std::move($1);
+      }
+      | inclusive_or_expression '|' exclusive_or_expression
+      ;
+
+logic_and_expression
+      : inclusive_or_expression
+      {
+        $$ = std::move($1);
+      }
+      | logic_and_expression AND_OP inclusive_or_expression
+      ;
+
+
+logic_or_expression
+      : logic_and_expression
+      {
+        $$ = std::move($1);
+      }
+      | logical_or_expression OR_OP logic_and_expression
+      {
+        // binaryOp
+      }
+      ;
+
+conditional_expression
+      : logic_or_expression
+      {
+        $$ = std::move($1);
+      }
+      | logic_or_expression '?' expression ':' conditional_expression
+
+assignment_expression
+      : conditional_expression
+      {
+        $$ = std::move($1);
+      }
+      | unary_expression assignment_operator assignment_expression
+      ;
+
+
+expression
+      : assignment_expression
       {
         $$ = std::move($1);
       }
@@ -290,12 +402,10 @@ expression
 expression_statement
       : ';'
       {
-        //std::cout << "expression_statement nullptr" << std::endl;
         $$ = make_ast<ExpressionStatement>(nullptr);;
       }
       | expression ';'
       {
-        //std::cout << "expression_statement expression" << std::endl;
         $$ = make_ast<ExpressionStatement>(std::move($1));
       }
       ;
@@ -303,12 +413,10 @@ expression_statement
 jump_statement
       : RETURN expression ';'
       {
-        //std::cout << "return_statment expression" << std::endl;
         $$ = make_ast<ReturnStatement>(std::move($2));
       }
       | RETURN ';'
       {
-        //std::cout << "return_statment nullptr" << std::endl;
         $$ = make_ast<ReturnStatement>();
       }
       | BREAK ';'
@@ -324,12 +432,10 @@ jump_statement
 compound_statement
       : '{' '}'
       {
-        //std::cout << "compound_statement nullptr" << std::endl;
         $$ = make_ast<CompoundStatement>(nullptr);
       }
       | '{' block_item_list '}'
       {
-        //std::cout << "compound_statement nullptr" << std::endl;
         $$ = make_ast<CompoundStatement>(std::move($2)); 
       }
       ;
@@ -363,17 +469,14 @@ iteration_statement
 statement
       : jump_statement
       {
-        //std::cout << "statement return_statment" << std::endl;
         $$ = std::move($1);
       }
       | compound_statement
       {
-        //std::cout << "statement compound_statement" << std::endl;
         $$ = std::move($1);
       }
       | expression_statement
       {
-        //std::cout << "statement expression_statement" << std::endl;
         $$ = std::move($1);
       }
       | selection_statement
@@ -433,21 +536,16 @@ block_item_list
 function_definition
       : declaration_specifiers IDENTIFIER '(' ')' compound_statement
       {
-        //std::cout << "function def 1" << std::endl;
         auto identifier = make_ast<Identifier>($2);
-        //std::cout << "function def 1 mid" << std::endl;
         $$ = make_ast<FunctionDefinition>(std::move($1), std::move(identifier), nullptr, std::move($5));
-        //std::cout << "function def 1 finish" << std::endl;
       }
       | declaration_specifiers IDENTIFIER '(' parameter_list ')' compound_statement
       {
-        //std::cout << "function def 2" << std::endl;
         auto identifier = make_ast<Identifier>($2);
         $$ = make_ast<FunctionDefinition>(std::move($1), std::move(identifier), std::move($4), std::move($6));
       }
       | declaration_specifiers IDENTIFIER '(' VOID ')' compound_statement
       {
-        //std::cout << "function def 3" << std::endl;
         auto identifier = make_ast<Identifier>($2);
         $$ = make_ast<FunctionDefinition>(std::move($1), std::move(identifier), nullptr, std::move($6));
       }
@@ -456,8 +554,6 @@ function_definition
 external_declaration
       : function_definition
       {
-        
-        //std::cout << "external_declaration def " << std::endl;
         $$ = std::move($1);
       }
       ;
@@ -465,13 +561,10 @@ external_declaration
 translation_unit
       : external_declaration
       {
-        //std::cout << "translation_unit external " << std::endl;
         $$ = make_ast<TranslationUnit>(std::move($1));
       }
       | translation_unit external_declaration
       {
-        
-        //std::cout << "translation_unit and " << std::endl;
         $$ = std::move($1);
         $$->add_external_declaration(std::move($2));
       }
