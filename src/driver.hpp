@@ -13,9 +13,9 @@ class Driver {
 
   bool parse_file(const std::string& filename);
 
-  ProgramContext& context();
+  ProgramContext& get_context();
 
  private:
-  ProgramContext& _context;
+  ProgramContext& context_;
 };
 }  // namespace ntc

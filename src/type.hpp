@@ -44,6 +44,10 @@ namespace type {
   };
   
   std::string to_string(Specifier specifier);
+
+  std::string to_string(BinaryOp op);
+
+  std::string to_string(UnaryOp op);
 }
 
 }  // namespace ntc

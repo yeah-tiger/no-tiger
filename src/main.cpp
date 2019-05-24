@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
   bool res = driver.parse_file(config.input_filename);
   if (res == true) {
     Printer printer(std::cout);
-    context.get_start()->accept(printer);
+    context.get_program()->accept(printer);
   }
   return 0;
 }

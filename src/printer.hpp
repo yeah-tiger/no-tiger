@@ -6,6 +6,13 @@ namespace ntc {
 class Printer final : public Visitor {
  public:
   Printer(std::ostream& _os);
+
+  virtual void visit(AST& ast) override;
+
+  virtual void visit(BlockItem& block_item) override;
+
+  virtual void visit(ExternalDeclaration& external_declaration) override;
+  
   virtual void visit(TranslationUnit& translation_unit) override;
 
   virtual void visit(FunctionDefinition& function_definition) override;
@@ -22,6 +29,8 @@ class Printer final : public Visitor {
 
   virtual void visit(Initializer& initializer);
 
+  virtual void visit(Statement& statement) override;
+  
   virtual void visit(CompoundStatement& compound_statement) override;
 
   virtual void visit(ExpressionStatement& expression_statement) override;
@@ -37,7 +46,9 @@ class Printer final : public Visitor {
   virtual void visit(WhileStatement& while_statement) override;
 
   virtual void visit(ForStatement& for_statement) override;
-
+  
+  virtual void visit(Expression& expression) override;
+  
   virtual void visit(IntegerExpression& integer_expression) override;
 
   virtual void visit(FloatExpression& float_expression) override;
@@ -48,14 +59,16 @@ class Printer final : public Visitor {
 
   virtual void visit(
       StringLiteralExpression& string_literal_expression) override;
-  
-  virtual void visit(BinaryOperationExpression& binary_operation_expression);
 
-  virtual void visit(UnaryOperationExpression& unary_operation_expression);
+  virtual void visit(
+      BinaryOperationExpression& binary_operation_expression) override;
 
-  virtual void visit(ConditionalExpression& conditional_expression);
+  virtual void visit(
+      UnaryOperationExpression& unary_operation_expression) override;
 
-  virtual void visit(FunctionCall& function_call);
+  virtual void visit(ConditionalExpression& conditional_expression) override;
+
+  virtual void visit(FunctionCall& function_call) override;
 
  private:
   void indent(int cnt = 2);
