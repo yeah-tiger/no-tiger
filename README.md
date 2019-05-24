@@ -40,7 +40,7 @@ sh build.sh
 
 - [x] Support expressions
 
-- [ ] AST format output (XML/json)
+- [x] XML AST format output
 
 - [ ] LLVM codegen
 
