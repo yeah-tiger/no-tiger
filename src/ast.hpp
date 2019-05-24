@@ -73,7 +73,7 @@ class ASTList final : public AST {
   auto& get_item_list() { return item_list_; }
 
  protected:
- std::vector<std::unique_ptr<T>> item_list_;
+  std::vector<std::unique_ptr<T>> item_list_;
 };
 
 using BlockItemList = ASTList<BlockItem>;
@@ -100,7 +100,9 @@ class ExternalDeclaration : public AST {
 class TranslationUnit final : public AST {
  public:
   explicit TranslationUnit(
-      std::unique_ptr<ExternalDeclaration>&& external_declaration) {
+      std::unique_ptr<ExternalDeclaration>&& external_declaration,
+      const std::string& name)
+      : name_(name) {
     add_external_declaration(std::move(external_declaration));
   }
 
@@ -113,8 +115,11 @@ class TranslationUnit final : public AST {
 
   auto& get_declarations() { return external_declarations_; }
 
+  std::string get_name() { return name_; }
+
  protected:
   std::vector<std::unique_ptr<ExternalDeclaration>> external_declarations_;
+  std::string name_;
 };
 
 class ParameterDeclaration final : public AST {
@@ -126,6 +131,10 @@ class ParameterDeclaration final : public AST {
         identifier_(std::move(identifier)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_declaration_specifier() { return declaration_specifier_; }
+
+  auto& get_identifier() { return identifier_; }
 
  protected:
   std::unique_ptr<DeclarationSpecifier> declaration_specifier_;
@@ -177,12 +186,16 @@ class DeclarationSpecifier final : public AST {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_type_specifiers() { return type_specifiers_; }
+
   void add_type_specifier(std::unique_ptr<TypeSpecifier>&& type_specifier) {
     assert(type_specifier != nullptr);
     type_specifiers_.push_back(std::move(type_specifier));
   }
 
   void set_const(bool is_const) { is_const_ = is_const; }
+
+  bool get_is_const() const { return is_const_; }
 
  protected:
   std::vector<std::unique_ptr<TypeSpecifier>> type_specifiers_;
@@ -224,6 +237,12 @@ class Declaration final : public BlockItem {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_type_specifier() { return type_specifier_; }
+
+  auto& get_identifier() { return identifer_; }
+
+  auto& get_initializer() { return initializer_; }
+
  protected:
   std::unique_ptr<TypeSpecifier> type_specifier_;
   std::unique_ptr<Identifier> identifer_;
@@ -236,6 +255,8 @@ class Initializer final : public AST {
       : expression_(std::move(expression)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_expression() { return expression_; }
 
  protected:
   std::unique_ptr<Expression> expression_;
@@ -265,6 +286,8 @@ class ExpressionStatement final : public Statement {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_expression() { return expression_; }
+
  protected:
   std::unique_ptr<Expression> expression_;
 };
@@ -280,6 +303,8 @@ class ReturnStatement final : public JumpStatement {
       : expression_(std::move(expression)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_expression() { return expression_; }
 
  protected:
   std::unique_ptr<Expression> expression_;
@@ -318,6 +343,12 @@ class IfStatement final : public SelectionStatement {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_if_expression() { return if_expression_; }
+
+  auto& get_then_statment() { return then_statement_; }
+
+  auto& get_else_statement() { return else_statement_; }
+
  protected:
   std::unique_ptr<Expression> if_expression_;
   std::unique_ptr<Statement> then_statement_;
@@ -338,6 +369,10 @@ class WhileStatement final : public IterationStatement {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_while_expression() { return while_expression_; }
+
+  auto& get_loop_statement() { return loop_statement_; }
+
  protected:
   std::unique_ptr<Expression> while_expression_;
   std::unique_ptr<Statement> loop_statement_;
@@ -355,6 +390,14 @@ class ForStatement final : public IterationStatement {
         loop_statement_(std::move(loop_statement)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_init_clause() { return init_clause_; }
+
+  auto& get_cond_expression() { return cond_expression_; }
+
+  auto& get_iteration_expression() { return iteraion_expression_; }
+
+  auto& get_loop_statement() { return loop_statement_; }
 
  protected:
   std::unique_ptr<ExpressionStatement> init_clause_;
@@ -375,6 +418,8 @@ class IntegerExpression final : public ConstantExpression {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  int get_val() { return val_; }
+
  protected:
   int val_;
 };
@@ -385,6 +430,8 @@ class FloatExpression final : public ConstantExpression {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  double get_val() { return val_; }
+
  protected:
   double val_;
 };
@@ -394,6 +441,8 @@ class BooleanExpression final : public ConstantExpression {
   BooleanExpression(bool val) : val_(val) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  bool get_val() { return val_; }
 
  protected:
   bool val_;
@@ -409,6 +458,8 @@ class CharacterExpression final : public ConstantExpression {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  char get_val() { return val_; }
+
  protected:
   char val_;
 };
@@ -418,6 +469,8 @@ class StringLiteralExpression final : public ConstantExpression {
   StringLiteralExpression(const std::string& val) : val_(val) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  std::string get_val() { return val_; }
 
  protected:
   std::string val_;
@@ -432,6 +485,12 @@ class BinaryOperationExpression final : public Expression {
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
+  auto& get_lhs() { return lhs_; }
+
+  auto& get_rhs() { return rhs_; }
+
+  type::BinaryOp get_op_type() { return op_type_; }
+
  protected:
   type::BinaryOp op_type_;
   std::unique_ptr<Expression> lhs_;
@@ -439,13 +498,17 @@ class BinaryOperationExpression final : public Expression {
 };
 
 class UnaryOperationExpression final : public Expression {
-  public:
+ public:
   UnaryOperationExpression(type::UnaryOp op_type,
                            std::unique_ptr<Expression>&& operand)
 
       : op_type_(op_type), operand_(std::move(operand)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_operand() { return operand_; }
+
+  type::UnaryOp get_op_type() { return op_type_; }
 
  protected:
   type::UnaryOp op_type_;
@@ -462,6 +525,12 @@ class ConditionalExpression final : public Expression {
         false_expression_(std::move(false_expression)) {}
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_cond_expression() { return cond_expression_; }
+
+  auto& get_true_expression() { return true_expression_; }
+
+  auto& get_false_expression() { return false_expression_; }
 
  protected:
   std::unique_ptr<Expression> cond_expression_;
@@ -480,6 +549,10 @@ class FunctionCall final : public Expression {
   }
 
   virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+
+  auto& get_target() { return target_; }
+
+  auto& get_argument_list() { return argument_list_; }
 
  protected:
   std::unique_ptr<Expression> target_;

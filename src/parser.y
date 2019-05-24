@@ -128,7 +128,7 @@ using namespace ntc;
 start
       : translation_unit END
       {
-        driver.context().get_start() = std::move($1);
+        driver.get_context().get_program() = std::move($1);
       }
 
 type_specifier
@@ -474,7 +474,7 @@ expression
 expression_statement
       : ';'
       {
-        $$ = make_ast<ExpressionStatement>(nullptr);;
+        $$ = make_ast<ExpressionStatement>(nullptr);
       }
       | expression ';'
       {
@@ -513,13 +513,13 @@ compound_statement
       ;
 
 selection_statement
-      : IF '(' expression ')' '{' statement '}'
+      : IF '(' expression ')' compound_statement
       {
-        $$ = make_ast<IfStatement>(std::move($3), std::move($6));
+        $$ = make_ast<IfStatement>(std::move($3), std::move($5));
       }
-      | IF '(' expression ')' '{' statement '}' ELSE '{' statement '}'
+      | IF '(' expression ')' compound_statement ELSE statement
       {
-        $$ = make_ast<IfStatement>(std::move($3), std::move($6), std::move($10));
+        $$ = make_ast<IfStatement>(std::move($3), std::move($5), std::move($7));
       }
       ;
 
@@ -633,7 +633,7 @@ external_declaration
 translation_unit
       : external_declaration
       {
-        $$ = make_ast<TranslationUnit>(std::move($1));
+        $$ = make_ast<TranslationUnit>(std::move($1), driver.get_context().get_name());
       }
       | translation_unit external_declaration
       {
