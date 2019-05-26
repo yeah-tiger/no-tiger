@@ -3,6 +3,12 @@ project(no-tiger)
 
 set(CMAKE_CXX_STANDARD 14)
 
+if (APPLE)
+    FIND_PACKAGE(BISON)
+    FIND_PACKAGE(FLEX 2.5.37 EXACT)
+    include_directories(/usr/local/include)
+endif()
+
 include_directories(cxxopts/include src/ ${CMAKE_BINARY_DIR})
 
 file(GLOB SOURCE_FILES
