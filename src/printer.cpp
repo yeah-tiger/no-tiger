@@ -19,7 +19,7 @@ void Printer::visit(ExternalDeclaration& external_declaration) {
 
 void Printer::visit(TranslationUnit& translation_unit) {
   output_space();
-  os << "<TranslationUnit name=" << translation_unit.get_name() << ">"
+  os << "<TranslationUnit name=\"" << translation_unit.get_name() << "\">"
      << std::endl;
   indent();
   auto& decls = translation_unit.get_declarations();
@@ -49,8 +49,8 @@ void Printer::visit(FunctionDefinition& function_definition) {
 
 void Printer::visit(DeclarationSpecifier& declaration_specifier) {
   output_space();
-  os << "<DeclarationSpecifier const=" << std::boolalpha
-     << declaration_specifier.get_is_const() << ">" << std::endl;
+  os << "<DeclarationSpecifier const=\"" << std::boolalpha
+     << declaration_specifier.get_is_const() << "\">" << std::endl;
   indent();
   auto& type_specifiers = declaration_specifier.get_type_specifiers();
   for (auto& type_specifier : type_specifiers) {
@@ -64,7 +64,7 @@ void Printer::visit(DeclarationSpecifier& declaration_specifier) {
 void Printer::visit(Identifier& identifier) {
   output_space();
   os << "<Identifier "
-     << "name=" << identifier.get_name() << ">" << std::endl;
+     << "name=\"" << identifier.get_name() << "\">" << std::endl;
   output_space();
   os << "</Identifier>" << std::endl;
 }
@@ -83,7 +83,7 @@ void Printer::visit(ParameterDeclaration& parameter_declaration) {
 void Printer::visit(TypeSpecifier& type_specifier) {
   output_space();
   os << "<TypeSpecifier "
-     << "type=" << type::to_string(type_specifier.get_specifier()) << ">"
+     << "type=\"" << type::to_string(type_specifier.get_specifier()) << "\">"
      << std::endl;
   output_space();
   os << "</TypeSpecifier>" << std::endl;
@@ -206,7 +206,7 @@ void Printer::visit(Expression& expression) { expression.accept(*this); }
 
 void Printer::visit(IntegerExpression& integer_expression) {
   output_space();
-  os << "<IntegerExpression val=" << integer_expression.get_val() << ">"
+  os << "<IntegerExpression val=\"" << integer_expression.get_val() << "\">"
      << std::endl;
   output_space();
   os << "</IntegerExpression>" << std::endl;
@@ -214,7 +214,7 @@ void Printer::visit(IntegerExpression& integer_expression) {
 
 void Printer::visit(FloatExpression& float_expression) {
   output_space();
-  os << "<FloatExpression val=" << float_expression.get_val() << ">"
+  os << "<FloatExpression val=\"" << float_expression.get_val() << "\">"
      << std::endl;
   output_space();
   os << "</FloatExpression>" << std::endl;
@@ -222,7 +222,7 @@ void Printer::visit(FloatExpression& float_expression) {
 
 void Printer::visit(BooleanExpression& boolean_expression) {
   output_space();
-  os << "<BooleanExpression val=" << boolean_expression.get_val() << ">"
+  os << "<BooleanExpression val=\"" << boolean_expression.get_val() << "\">"
      << std::endl;
   output_space();
   os << "</BooleanExpression>" << std::endl;
@@ -230,7 +230,7 @@ void Printer::visit(BooleanExpression& boolean_expression) {
 
 void Printer::visit(CharacterExpression& character_expression) {
   output_space();
-  os << "<CharacterExpression val=" << character_expression.get_val() << ">"
+  os << "<CharacterExpression val=\"" << character_expression.get_val() << "\">"
      << std::endl;
   output_space();
   os << "</CharacterExpression>" << std::endl;
@@ -238,16 +238,16 @@ void Printer::visit(CharacterExpression& character_expression) {
 
 void Printer::visit(StringLiteralExpression& string_literal_expression) {
   output_space();
-  os << "<StringLiteralExpression val=" << string_literal_expression.get_val()
-     << ">" << std::endl;
+  os << "<StringLiteralExpression val=\"" << string_literal_expression.get_val()
+     << "\">" << std::endl;
   output_space();
   os << "</StringLiteralExpression>" << std::endl;
 }
 
 void Printer::visit(BinaryOperationExpression& binary_operation_expression) {
   output_space();
-  os << "<BinaryOperationExpression op="
-     << type::to_string(binary_operation_expression.get_op_type()) << ">"
+  os << "<BinaryOperationExpression op=\""
+     << type::to_string(binary_operation_expression.get_op_type()) << "\">"
      << std::endl;
   indent();
   visit(*(binary_operation_expression.get_lhs()));
@@ -259,7 +259,7 @@ void Printer::visit(BinaryOperationExpression& binary_operation_expression) {
 
 void Printer::visit(UnaryOperationExpression& unary_operation_expression) {
   output_space();
-  os << "<UnaryOperationExpression op=" << type::to_string(unary_operation_expression.get_op_type())<< ">" << std::endl;
+  os << "<UnaryOperationExpression op=\"" << type::to_string(unary_operation_expression.get_op_type())<< "\">" << std::endl;
   indent();
   visit(*(unary_operation_expression.get_operand()));
   dedent();
