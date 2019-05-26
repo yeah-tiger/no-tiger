@@ -1,71 +1,71 @@
-<TranslationUnit name=../tests/fib.c>
+<TranslationUnit name="../tests/fib.c">
   <FunctionDefinition>
-    <DeclarationSpecifier const=false>
-      <TypeSpecifier type=specifier::int>
+    <DeclarationSpecifier const="false">
+      <TypeSpecifier type="specifier::int">
       </TypeSpecifier>
     </DeclarationSpecifier>
-    <Identifier name=fib>
+    <Identifier name="fib">
     </Identifier>
     <ParameterDeclaration>
-      <DeclarationSpecifier const=false>
-        <TypeSpecifier type=specifier::int>
+      <DeclarationSpecifier const="false">
+        <TypeSpecifier type="specifier::int">
         </TypeSpecifier>
       </DeclarationSpecifier>
-      <Identifier name=n>
+      <Identifier name="n">
       </Identifier>
     </ParameterDeclaration>
     <CompoundStatement>
       <IfStatement>
-        <BinaryOperationExpression op=BinaryOp::EQUAL>
-          <Identifier name=n>
+        <BinaryOperationExpression op="BinaryOp::EQUAL">
+          <Identifier name="n">
           </Identifier>
-          <IntegerExpression val=0>
+          <IntegerExpression val="0">
           </IntegerExpression>
         </BinaryOperationExpression>
         <CompoundStatement>
           <ExpressionStatement>
-            <IntegerExpression val=1>
+            <IntegerExpression val="1">
             </IntegerExpression>
           </ExpressionStatement>
           <ReturnStatement>
-            <IntegerExpression val=0>
+            <IntegerExpression val="0">
             </IntegerExpression>
           </ReturnStatement>
         </CompoundStatement>
         <IfStatement>
-          <BinaryOperationExpression op=BinaryOp::EQUAL>
-            <Identifier name=n>
+          <BinaryOperationExpression op="BinaryOp::EQUAL">
+            <Identifier name="n">
             </Identifier>
-            <IntegerExpression val=1>
+            <IntegerExpression val="1">
             </IntegerExpression>
           </BinaryOperationExpression>
           <CompoundStatement>
             <ReturnStatement>
-              <IntegerExpression val=1>
+              <IntegerExpression val="1">
               </IntegerExpression>
             </ReturnStatement>
           </CompoundStatement>
         </IfStatement>
       </IfStatement>
       <ReturnStatement>
-        <BinaryOperationExpression op=BinaryOp::ADD>
+        <BinaryOperationExpression op="BinaryOp::ADD">
           <FunctionCall>
-            <Identifier name=fib>
+            <Identifier name="fib">
             </Identifier>
-            <BinaryOperationExpression op=BinaryOp::SUB>
-              <Identifier name=n>
+            <BinaryOperationExpression op="BinaryOp::SUB">
+              <Identifier name="n">
               </Identifier>
-              <IntegerExpression val=1>
+              <IntegerExpression val="1">
               </IntegerExpression>
             </BinaryOperationExpression>
           </FunctionCall>
           <FunctionCall>
-            <Identifier name=fib>
+            <Identifier name="fib">
             </Identifier>
-            <BinaryOperationExpression op=BinaryOp::SUB>
-              <Identifier name=n>
+            <BinaryOperationExpression op="BinaryOp::SUB">
+              <Identifier name="n">
               </Identifier>
-              <IntegerExpression val=2>
+              <IntegerExpression val="2">
               </IntegerExpression>
             </BinaryOperationExpression>
           </FunctionCall>
@@ -74,39 +74,39 @@
     </CompoundStatement>
   </FunctionDefinition>
   <FunctionDefinition>
-    <DeclarationSpecifier const=false>
-      <TypeSpecifier type=specifier::int>
+    <DeclarationSpecifier const="false">
+      <TypeSpecifier type="specifier::int">
       </TypeSpecifier>
     </DeclarationSpecifier>
-    <Identifier name=main>
+    <Identifier name="main">
     </Identifier>
     <CompoundStatement>
       <Declaration>
-        <TypeSpecifier type=specifier::int>
+        <TypeSpecifier type="specifier::int">
         </TypeSpecifier>
-        <Identifier name=n>
+        <Identifier name="n">
         </Identifier>
         <Initializer>
-          <IntegerExpression val=10>
+          <IntegerExpression val="10">
           </IntegerExpression>
         </Initializer>
       </Declaration>
       <ExpressionStatement>
         <FunctionCall>
-          <Identifier name=printf>
+          <Identifier name="printf">
           </Identifier>
-          <StringLiteralExpression val=%d>
+          <StringLiteralExpression val="%d">
           </StringLiteralExpression>
           <FunctionCall>
-            <Identifier name=fib>
+            <Identifier name="fib">
             </Identifier>
-            <Identifier name=n>
+            <Identifier name="n">
             </Identifier>
           </FunctionCall>
         </FunctionCall>
       </ExpressionStatement>
       <ReturnStatement>
-        <IntegerExpression val=0>
+        <IntegerExpression val="0">
         </IntegerExpression>
       </ReturnStatement>
     </CompoundStatement>

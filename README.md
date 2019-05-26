@@ -17,15 +17,26 @@ no-tiger is the course project for Compiler, Zhejiang University, Spring 2019.
 
 4. [compiler2018_big_picture](https://acm.sjtu.edu.cn/w/images/b/b5/Compiler2018_big_picture.pdf) slides from Lequn Chen, TA from SJTU (now PhD at UW)
 
+## Prerequisite
+
+- Flex: 2.5.37 (different version may cause UB)
+- Bison: 3.0.4 (for Bison version >= 3.0.4, remove ```sed``` command in ```build.sh``` since move semantics is already supported)
+- GCC: 7.3.0
+
+
 ## Build
 ```
 git clone --recursive [url]
 ```
 
-- prerequisite: cmake3, Flex, Bison, GCC >= 4.9.0 (for `regex` support)
-
 ```bash
 sh build.sh
+```
+
+## Visualization
+Our compiler can dump AST in XML format. The provided python script can help visualize the AST
+```
+python tools/visualize.py input.xml
 ```
 
 ## Roadmap
@@ -50,6 +61,7 @@ sh build.sh
 
 - [ ] Support builtin I/O functions
 
+- [ ] Replace flex/bison with hand-written tokenzier/parser
 
 ## Built With
 
