@@ -23,6 +23,17 @@ no-tiger is the course project for Compiler, Zhejiang University, Spring 2019.
 - Bison: 3.0.4 (for Bison version >= 3.0.4, remove ```sed``` command in ```build.sh``` since move semantics is already supported)
 - GCC: 7.3.0
 
+#### For macOS
+
+You can easily install the newest Bison throwgh `homebrew`. However, currently for Flex version >= 2.6, there exist some reference problems. Thus, we use the version 2.5.37 to develop and test. You might download the source from [here](<https://github.com/westes/flex/releases/tag/flex-2.5.37>) and compile it yourself.
+
+What needs to be pointed out is that macOS has a default Flex (2.5.35) and a default Bison (2.3), and they may cause some conflicts with your manual installed versions. Thus, you should export the new ones' path into `~/.bash_profile` to make them available. Type in these in terminal:
+
+```bash
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
+echo 'export PATH="/usr/local/opt/bison/bin:$PATH"' >> ~/.bash_profile
+```
+
 
 ## Build
 ```

@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 #include <stdexcept>
+#include "ast.hpp"
 namespace ntc{
   class Driver;
   class Scanner;
@@ -77,7 +78,6 @@ namespace ntc{
 
 
 %code {
-#include "ast.hpp"
 #include "driver.hpp"
 #include "type.hpp"
 #undef yylex
