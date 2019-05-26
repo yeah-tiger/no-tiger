@@ -8,6 +8,7 @@
 %locations
 
 %code requires {
+#include "ast.hpp"
 #include <iostream>
 #include <string>
 #include <memory>
@@ -77,7 +78,6 @@ namespace ntc{
 
 
 %code {
-#include "ast.hpp"
 #include "driver.hpp"
 #include "type.hpp"
 #undef yylex
