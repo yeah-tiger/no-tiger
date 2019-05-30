@@ -7,5 +7,5 @@ flex -o scanner.cpp ../src/scanner.l
 sed -i 's/return \*new (yyas_<T> ()) T (t)/return \*new (yyas_<T> ()) T (std\:\:move((T\&)t))/' parser.hpp
 # for macOS:
 # sed -i "" 's/return \*new (yyas_<T> ()) T (t)/return \*new (yyas_<T> ()) T (std\:\:move((T\&)t))/' parser.hpp
-cmake ..
+cmake -DLLVM_DIR=/usr/lib/llvm-7/cmake ..
 make
