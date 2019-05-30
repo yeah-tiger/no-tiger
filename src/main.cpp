@@ -9,6 +9,7 @@ enum class ProgramMode {
   EMIT_ASSEMBLY,
   EMIT_OBJECT,
   EMIT_BINARY,
+  DUMP_AST,
 };
 
 struct ProgramConfig {
@@ -29,6 +30,7 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
     ("s", "Emit assembly code")
     ("c", "Emit object code")
     ("o, output", "Output file", cxxopts::value<std::string>()->default_value("a"), "FILE")
+    ("d, dump-ast", "Dump AST in XML format")
     ("h, help", "Show help");
     auto parse_result = options.parse(argc, argv);
     if (parse_result.count("h")) {
@@ -51,6 +53,9 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
     }
     if (parse_result.count("l")) {
       config_result.mode = ProgramMode::EMIT_LLVM_IR;
+    }
+    if (parse_result.count("d")) {
+      config_result.mode = ProgramMode::DUMP_AST;
     }
     if (parse_result.count("o")) {
       std::string output_filename = parse_result["i"].as<std::string>();
@@ -90,10 +95,12 @@ int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
   ProgramContext context;
   Driver driver(context);
-  bool res = driver.parse_file(config.input_filename);
-  if (res == true) {
+  driver.parse_file(config.input_filename);
+  if (config.mode == ProgramMode::DUMP_AST) {
     Printer printer(std::cout);
     context.get_program()->accept(printer);
+  } else {
+    
   }
   return 0;
 }
