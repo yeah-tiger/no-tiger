@@ -3,17 +3,17 @@
 #include "printer.hpp"
 #include "driver.hpp"
 #include "context.hpp"
+#include "codegen.hpp"
 using namespace ntc;
 enum class ProgramMode {
   EMIT_LLVM_IR,
   EMIT_ASSEMBLY,
   EMIT_OBJECT,
-  EMIT_BINARY,
   DUMP_AST,
 };
 
 struct ProgramConfig {
-  ProgramConfig() : mode(ProgramMode::EMIT_BINARY) {}
+  ProgramConfig() : mode(ProgramMode::EMIT_LLVM_IR) {}
   std::string input_filename;
   std::string output_filename;
   ProgramMode mode;
@@ -29,7 +29,7 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
     ("l", "Emit llvm IR")
     ("s", "Emit assembly code")
     ("c", "Emit object code")
-    ("o, output", "Output file", cxxopts::value<std::string>()->default_value("a"), "FILE")
+    ("o, output", "Output file", cxxopts::value<std::string>()->default_value("[same-as-input]"), "FILE")
     ("d, dump-ast", "Dump AST in XML format")
     ("h, help", "Show help");
     auto parse_result = options.parse(argc, argv);
@@ -61,13 +61,12 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
       std::string output_filename = parse_result["i"].as<std::string>();
       config_result.output_filename = output_filename;
     } else {
-      std::string output_filename = parse_result["i"].as<std::string>();
+      std::string output_filename = config_result.input_filename;
+      auto pos = output_filename.find_last_of('.');
+      if (pos != std::string::npos) {
+        output_filename.erase(pos);
+      }
       switch (config_result.mode) {
-        case ProgramMode::EMIT_BINARY: {
-          config_result.output_filename = output_filename + ".out";
-        }
-
-        break;
         case ProgramMode::EMIT_ASSEMBLY: {
           config_result.output_filename = output_filename + ".s";
         }
@@ -95,12 +94,17 @@ int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
   ProgramContext context;
   Driver driver(context);
+  std::cout << "in :" << config.input_filename << " out :" << config.output_filename << std::endl;
   driver.parse_file(config.input_filename);
   if (config.mode == ProgramMode::DUMP_AST) {
     Printer printer(std::cout);
     context.get_program()->accept(printer);
   } else {
-    
+    CodeGenerator generator(config.output_filename);
+    context.get_program()->accept(generator);
+    if (config.mode == ProgramMode::EMIT_LLVM_IR) {
+      generator.output();
+    }
   }
   return 0;
 }

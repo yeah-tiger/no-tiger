@@ -38,10 +38,6 @@ namespace type {
     NEGATE,
     LOGIC_NOT
   };
-
-  enum class AssginOp {
-
-  };
   
   std::string to_string(Specifier specifier);
 

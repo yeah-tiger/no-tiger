@@ -1,11 +1,22 @@
 #pragma once
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IRBuilder.h>
+#include <memory>
+#include <string>
+#include <map>
 #include "ast.hpp"
 #include "visitor.hpp"
 // TODO:
 namespace ntc {
+static llvm::LLVMContext llvm_context;
 class CodeGenerator final : public IRVisitor {
  public:
-  virtual llvm::Value* visit(AST&) override;
+  CodeGenerator(const std::string& module_id);
+
+  virtual llvm::Value* visit( AST&) override;
   virtual llvm::Value* visit(BlockItem&) override;
   virtual llvm::Value* visit(ExternalDeclaration&) override;
   virtual llvm::Value* visit(TranslationUnit&) override;
@@ -35,5 +46,12 @@ class CodeGenerator final : public IRVisitor {
   virtual llvm::Value* visit(UnaryOperationExpression&) override;
   virtual llvm::Value* visit(ConditionalExpression&) override;
   virtual llvm::Value* visit(FunctionCall&) override;
+
+  void output();
+ protected:
+  std::unique_ptr<llvm::Module> module_;
+  std::map<std::string, llvm::Value*> locals_;
+  llvm::IRBuilder<> builder_;
+  std::string module_id_;
 };
 }  // namespace ntc
