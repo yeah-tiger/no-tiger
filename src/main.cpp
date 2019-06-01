@@ -95,15 +95,22 @@ int main(int argc, char* argv[]) {
   ProgramContext context;
   Driver driver(context);
   std::cout << "in :" << config.input_filename << " out :" << config.output_filename << std::endl;
-  driver.parse_file(config.input_filename);
+  bool res = driver.parse_file(config.input_filename);
+  if (res == false) {
+    std::cerr << "Error occurred, exiting..." << std::endl;
+    return 1;
+  }
   if (config.mode == ProgramMode::DUMP_AST) {
     Printer printer(std::cout);
     context.get_program()->accept(printer);
   } else {
-    CodeGenerator generator(config.output_filename);
+    //TODO: add semantic check
+    // SemanticChecker checker;
+    // context.get_program()->accept(checker);
+    CodeGenerator generator(config.input_filename);
     context.get_program()->accept(generator);
     if (config.mode == ProgramMode::EMIT_LLVM_IR) {
-      generator.output();
+      generator.output(config.output_filename);
     }
   }
   return 0;

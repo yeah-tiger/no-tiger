@@ -193,10 +193,8 @@ class FunctionDefinition final : public ExternalDeclaration {
 
 class DeclarationSpecifier final : public AST {
  public:
-  explicit DeclarationSpecifier(std::unique_ptr<TypeSpecifier>&& type_specifier)
-      : is_const_(false) {
-    add_type_specifier(std::move(type_specifier));
-  }
+  explicit DeclarationSpecifier(std::unique_ptr<TypeSpecifier>&& type_specifer)
+      : is_const_(false), type_specifier_(std::move(type_specifer)) {}
 
   explicit DeclarationSpecifier(bool is_const) : is_const_(true) {
     assert(is_const == true);
@@ -208,19 +206,14 @@ class DeclarationSpecifier final : public AST {
     return visitor.visit(*this);
   }
 
-  auto& get_type_specifiers() { return type_specifiers_; }
-
-  void add_type_specifier(std::unique_ptr<TypeSpecifier>&& type_specifier) {
-    assert(type_specifier != nullptr);
-    type_specifiers_.push_back(std::move(type_specifier));
-  }
+  auto& get_type_specifier() { return type_specifier_; }
 
   void set_const(bool is_const) { is_const_ = is_const; }
 
   bool get_is_const() const { return is_const_; }
 
  protected:
-  std::vector<std::unique_ptr<TypeSpecifier>> type_specifiers_;
+  std::unique_ptr<TypeSpecifier> type_specifier_;
   bool is_const_;
 };
 
@@ -258,10 +251,10 @@ class TypeSpecifier final : public AST {
 
 class Declaration final : public BlockItem {
  public:
-  Declaration(std::unique_ptr<TypeSpecifier>&& type_specifier,
+  Declaration(std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
               std::unique_ptr<Identifier>&& identifer,
               std::unique_ptr<Initializer>&& initializer = nullptr)
-      : type_specifier_(std::move(type_specifier)),
+      : declaration_specifier_(std::move(declaration_specifier)),
         identifer_(std::move(identifer)),
         initializer_(std::move(initializer)) {}
 
@@ -271,14 +264,14 @@ class Declaration final : public BlockItem {
     return visitor.visit(*this);
   }
 
-  auto& get_type_specifier() { return type_specifier_; }
+  auto& get_declaration_specifier() { return declaration_specifier_; }
 
   auto& get_identifier() { return identifer_; }
 
   auto& get_initializer() { return initializer_; }
 
  protected:
-  std::unique_ptr<TypeSpecifier> type_specifier_;
+  std::unique_ptr<DeclarationSpecifier> declaration_specifier_;
   std::unique_ptr<Identifier> identifer_;
   std::unique_ptr<Initializer> initializer_;
 };

@@ -52,10 +52,7 @@ void Printer::visit(DeclarationSpecifier& declaration_specifier) {
   os << "<DeclarationSpecifier const=\"" << std::boolalpha
      << declaration_specifier.get_is_const() << "\">" << std::endl;
   indent();
-  auto& type_specifiers = declaration_specifier.get_type_specifiers();
-  for (auto& type_specifier : type_specifiers) {
-    visit(*type_specifier);
-  }
+  visit(*(declaration_specifier.get_type_specifier()));
   dedent();
   output_space();
   os << "</DeclarationSpecifier>" << std::endl;
@@ -93,7 +90,7 @@ void Printer::visit(Declaration& declaration) {
   output_space();
   os << "<Declaration>" << std::endl;
   indent();
-  visit(*(declaration.get_type_specifier()));
+  visit(*(declaration.get_declaration_specifier()));
   visit(*(declaration.get_identifier()));
   visit(*(declaration.get_initializer()));
   dedent();

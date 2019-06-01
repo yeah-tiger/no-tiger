@@ -12,8 +12,7 @@ namespace type {
     CHAR,
     VOID,
     BOOL,
-    UNSIGNED,
-    SIGNED,
+    STRING,
   };
 
   enum class BinaryOp {

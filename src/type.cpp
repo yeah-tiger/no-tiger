@@ -23,10 +23,8 @@ namespace ntc
       return prefix + "void";
     case Specifier::BOOL:
       return prefix + "bool";
-    case Specifier::UNSIGNED:
-      return prefix + "unsigned";
-    case Specifier::SIGNED:
-      return prefix + "signed";
+    case Specifier::STRING:
+      return prefix + "string";
     default:
       return prefix + "undefined";
     }
