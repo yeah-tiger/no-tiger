@@ -444,9 +444,10 @@ assignment_expression
       {
         $$ = std::move($1);
       }
-      | unary_expression '=' assignment_expression
+      | IDENTIFIER '=' assignment_expression
       {
-        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move($1), std::move($3));
+        auto identifier = make_ast<Identifier>($1);
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move(identifier), std::move($3));
       }
       ;
 

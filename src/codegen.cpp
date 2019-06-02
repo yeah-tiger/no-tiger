@@ -50,7 +50,6 @@ void SymbolTable::add_symbol(const std::string& name, llvm::Value* val,
 }
 
 SymbolRecord* SymbolTable::get_symbol(const std::string& name) {
-  assert(find_symbol(name) == true);
   for (auto table_iter = table_stack_.rbegin();
        table_iter != table_stack_.rend(); ++table_iter) {
     auto search = table_iter->find(name);
@@ -222,18 +221,42 @@ llvm::Value* CodeGenerator::visit(CompoundStatement& compound_statement) {
   return nullptr;
 }
 
-llvm::Value* CodeGenerator::visit(ExpressionStatement&) { return nullptr; }
-
-llvm::Value* CodeGenerator::visit(ReturnStatement&) { return nullptr; }
-
+llvm::Value* CodeGenerator::visit(ExpressionStatement& expression_statement) { return nullptr; }
+// TODO:
+llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) { 
+  if (cur_function_return_type_ == nullptr) {
+    codegen_error("invalid return statement");
+  }
+  auto& expr = return_statement.get_expression();
+  auto* record = symbol_table_.get_symbol(cur_function_name_);
+  if (expr == nullptr && record != nullptr) {
+    codegen_error("empty return");
+  } else if (expr != nullptr && record == nullptr) {
+    codegen_error("return value in a void function");
+  }
+  if (expr != nullptr) {
+    auto* value = expr->accept(*this);
+    auto* local = record->val;
+    auto* lhs_type = local->getType()->getPointerElementType();
+    auto* rhs_type = value->getType();
+    if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
+      value = builder_.CreateSIToFP(value, builder_.getDoubleTy());
+      rhs_type = value->getType();
+    }
+    type_check(lhs_type, rhs_type, &value);
+    builder_.CreateStore(value, local);
+  }
+  return nullptr;
+}
+// TODO:
 llvm::Value* CodeGenerator::visit(BreakStatement&) { return nullptr; }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(ContinueStatement&) { return nullptr; }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(IfStatement&) { return nullptr; }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(WhileStatement&) { return nullptr; }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(ForStatement&) { return nullptr; }
 
 llvm::Value* CodeGenerator::visit(Expression& expression) {
@@ -259,19 +282,19 @@ llvm::Value* CodeGenerator::visit(CharacterExpression& expr) {
 llvm::Value* CodeGenerator::visit(StringLiteralExpression& expr) {
   return builder_.CreateGlobalStringPtr(expr.get_val());
 }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(BinaryOperationExpression&) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(UnaryOperationExpression&) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
-
+// TODO:
 llvm::Value* CodeGenerator::visit(FunctionCall&) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
