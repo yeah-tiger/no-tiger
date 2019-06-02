@@ -454,11 +454,15 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
     llvm::Value* lhs_val_tmp = lhs_val;
     llvm::Value* rhs_val_tmp = rhs_val;
     if (lhs_type->isIntegerTy(64) || rhs_type->isIntegerTy(64)) {
-      lhs_val_tmp = builder_.CreateIntCast(lhs_val, builder_.getInt64Ty(), true);
-      rhs_val_tmp = builder_.CreateIntCast(rhs_val, builder_.getInt64Ty(), true);
+      lhs_val_tmp =
+          builder_.CreateIntCast(lhs_val, builder_.getInt64Ty(), true);
+      rhs_val_tmp =
+          builder_.CreateIntCast(rhs_val, builder_.getInt64Ty(), true);
     } else if (lhs_type->isIntegerTy(32) || rhs_type->isIntegerTy(32)) {
-      lhs_val_tmp = builder_.CreateIntCast(lhs_val, builder_.getInt32Ty(), true);
-      rhs_val_tmp = builder_.CreateIntCast(rhs_val, builder_.getInt32Ty(), true);  
+      lhs_val_tmp =
+          builder_.CreateIntCast(lhs_val, builder_.getInt32Ty(), true);
+      rhs_val_tmp =
+          builder_.CreateIntCast(rhs_val, builder_.getInt32Ty(), true);
     }
     llvm::CmpInst::Predicate cmp;
     switch (op) {
@@ -487,7 +491,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
       return builder_.CreateFCmp(cmp, lhs_val_tmp, rhs_val_tmp);
     }
     llvm::Instruction::BinaryOps binop;
-        switch (op) {
+    switch (op) {
       case type::BinaryOp::ADD:
         binop = llvm::Instruction::Add;
         break;
@@ -513,8 +517,45 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
   codegen_error("binary operation: type imcompatible");
   return nullptr;
 }
-// TODO:
-llvm::Value* CodeGenerator::visit(UnaryOperationExpression&) {
+
+llvm::Value* CodeGenerator::visit(UnaryOperationExpression& expr) {
+  auto& operand = expr.get_operand();
+  auto op = expr.get_op_type();
+  auto* val = operand->accept(*this);
+  auto* type = val->getType();
+  if (type->isPointerTy()) {
+    codegen_error("unary operation: no supported op for string");
+  } else if (type->isIntegerTy(8)) {
+    codegen_error("unary operation: no supported op for char");
+  } else if (type->isIntegerTy(1)) {
+    if (op == type::UnaryOp::LOGIC_NOT) {
+      return builder_.CreateNot(val);
+    } else {
+      codegen_error("unary operation: unsupported op: " + to_string(op) +
+                    " for char");
+    }
+  } else if (type->isFloatTy() || type->isDoubleTy()) {
+    switch (op) {
+      case type::UnaryOp::POSITIVIZE:
+        return val;
+      case type::UnaryOp::NEGATE:
+        return builder_.CreateNeg(val);
+      default:
+        codegen_error("unary operation: unsupported op: " + to_string(op) +
+                      " for floating point");
+    }
+  } else if (type->isIntegerTy(16) || type->isIntegerTy(32) ||
+             type->isIntegerTy(64)) {
+    switch (op) {
+      case type::UnaryOp::POSITIVIZE:
+        return val;
+      case type::UnaryOp::NEGATE:
+        return builder_.CreateNeg(val);
+      default:
+        codegen_error("unary operation: unsupported op: " + to_string(op) +
+                      " for integer");
+    }
+  }
   codegen_error("unary operation: type imcompatible");
   return nullptr;
 }
