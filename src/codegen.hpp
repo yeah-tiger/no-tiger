@@ -92,6 +92,8 @@ class CodeGenerator final : public IRVisitor {
 
   llvm::Type* get_llvm_type(DeclarationSpecifier& declaration_specifier);
 
+  llvm::Value* get_identifier_ptr(Identifier* identifier);
+
   bool get_const(DeclarationSpecifier& declaration_specifier);
 
   void codegen_error(const std::string& msg);

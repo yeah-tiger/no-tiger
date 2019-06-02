@@ -37,9 +37,8 @@ bool SymbolTable::find_symbol_local(const std::string& name) {
     } else {
       return false;
     }
-  } 
+  }
 }
-
 
 void SymbolTable::add_symbol(const std::string& name, llvm::Value* val,
                              llvm::Type* type, bool is_const) {
@@ -117,7 +116,7 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
     ++index;
   }
   if (!return_type->isVoidTy()) {
-    auto *ret = builder_.CreateAlloca(return_type);
+    auto* ret = builder_.CreateAlloca(return_type);
     symbol_table_.add_symbol(identifier->get_name(), ret, return_type, false);
   }
   cur_function_name_ = identifier->get_name();
@@ -133,7 +132,7 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
   }
   llvm::verifyFunction(*function);
   symbol_table_.pop_table();
-  
+
   cur_function_name_ = "";
   cur_function_return_type_ = nullptr;
   return nullptr;
@@ -145,13 +144,7 @@ llvm::Value* CodeGenerator::visit(DeclarationSpecifier&) {
 }
 
 llvm::Value* CodeGenerator::visit(Identifier& identifier) {
-  if (symbol_table_.find_symbol(identifier.get_name())) {
-    return symbol_table_.get_symbol(identifier.get_name())->val;
-  } else {
-    codegen_error("variable \'" + identifier.get_name() +
-                  "\' used before declared");
-  }
-  return nullptr;
+  return builder_.CreateLoad(get_identifier_ptr(&identifier));
 }
 
 llvm::Value* CodeGenerator::visit(ParameterDeclaration&) {
@@ -221,9 +214,15 @@ llvm::Value* CodeGenerator::visit(CompoundStatement& compound_statement) {
   return nullptr;
 }
 
-llvm::Value* CodeGenerator::visit(ExpressionStatement& expression_statement) { return nullptr; }
+llvm::Value* CodeGenerator::visit(ExpressionStatement& expression_statement) {
+  auto& expr = expression_statement.get_expression();
+  if (expr != nullptr) {
+    expr->accept(*this);
+  }
+  return nullptr;
+}
 
-llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) { 
+llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
   if (cur_function_return_type_ == nullptr) {
     codegen_error("invalid return statement");
   }
@@ -238,7 +237,7 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
     auto* value = expr->accept(*this);
     auto* local = record->val;
     auto* lhs_type = local->getType()->getPointerElementType();
-    auto* rhs_type = value->getType();
+    auto*  rhs_type = value->getType();
     if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
       value = builder_.CreateSIToFP(value, builder_.getDoubleTy());
       rhs_type = value->getType();
@@ -284,13 +283,35 @@ llvm::Value* CodeGenerator::visit(StringLiteralExpression& expr) {
 }
 // TODO:
 llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
-  // auto& lhs = expr.get_lhs();
-  // auto op = expr.get_op_type();
-  // auto& rhs = expr.get_rhs();
+  auto& lhs = expr.get_lhs();
+  auto op = expr.get_op_type();
+  auto& rhs = expr.get_rhs();
+  auto* rhs_val = rhs->accept(*this);
+  // special handle assign
+  if (op == type::BinaryOp::ASSIGN) {
+    Identifier* identifier = dynamic_cast<Identifier*>(lhs.get());
+    if (identifier == nullptr) {
+      codegen_error("cannot assign value to rvalue");
+    } else {
+      auto* lhs_val = get_identifier_ptr(identifier);
+      auto* lhs_type = lhs_val->getType()->getPointerElementType();
+      auto* rhs_type = rhs_val->getType();
+      if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
+        rhs_val = builder_.CreateSIToFP(rhs_val, builder_.getDoubleTy());
+        rhs_type = rhs_val->getType();
+      }
+      type_check(lhs_type, rhs_type, &rhs_val);
+      builder_.CreateStore(rhs_val, lhs_val);
+      return rhs_val;
+    }
+  }
+
+  // other op
   // auto* lhs_val = lhs->accept(*this);
-  // auto* rhs_val = rhs->accept(*this);
-  
-  
+  // auto* lhs_type = lhs_val->getType();
+  // auto* rhs_type = rhs_val->getType();
+  // type_check(lhs_type, rhs_type, &rhs_val);
+
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
 // TODO:
@@ -339,6 +360,16 @@ llvm::Type* CodeGenerator::get_llvm_type(
     default:
       return nullptr;
   }
+}
+
+llvm::Value* CodeGenerator::get_identifier_ptr(Identifier* identifier) {
+  if (symbol_table_.find_symbol(identifier->get_name())) {
+    return symbol_table_.get_symbol(identifier->get_name())->val;
+  } else {
+    codegen_error("variable \'" + identifier->get_name() +
+                  "\' used before declared");
+  }
+  return nullptr;
 }
 
 bool CodeGenerator::get_const(DeclarationSpecifier& declaration_specifier) {
