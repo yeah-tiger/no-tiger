@@ -281,7 +281,7 @@ llvm::Value* CodeGenerator::visit(CharacterExpression& expr) {
 llvm::Value* CodeGenerator::visit(StringLiteralExpression& expr) {
   return builder_.CreateGlobalStringPtr(expr.get_val());
 }
-// TODO:
+
 llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
   auto& lhs = expr.get_lhs();
   auto op = expr.get_op_type();
@@ -566,7 +566,25 @@ llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
 }
 // TODO:
 llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
-  return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
+  auto& target = function_call.get_target();
+  Identifier* identifier = dynamic_cast<Identifier*>(target.get());
+  if (identifier == nullptr) {
+    codegen_error("cannot call on rvalue");
+  }
+  auto* function = module_->getFunction(identifier->get_name());
+  if (function == nullptr) {
+    codegen_error("invalid function: " + identifier->get_name());
+  }
+  auto& argument_list = function_call.get_argument_list();
+  if (function->arg_size() != argument_list.size()) {
+    codegen_error("invalid argument number: " + identifier->get_name());
+  }
+  std::vector<llvm::Value*> args;
+  for (auto& arg: argument_list) {
+    auto* val = arg->accept(*this);
+    args.push_back(val);
+  }
+  return builder_.CreateCall(function, args);  
 }
 
 void CodeGenerator::output(const std::string& filename) {
