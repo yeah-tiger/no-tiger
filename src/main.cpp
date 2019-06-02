@@ -1,9 +1,9 @@
 #include <cxxopts.hpp>
 #include <iostream>
-#include "printer.hpp"
-#include "driver.hpp"
-#include "context.hpp"
 #include "codegen.hpp"
+#include "context.hpp"
+#include "driver.hpp"
+#include "printer.hpp"
 using namespace ntc;
 enum class ProgramMode {
   EMIT_LLVM_IR,
@@ -24,14 +24,14 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
   try {
     cxxopts::Options options(argv[0], "- ntc: No-Tiger Lang Compiler`");
     options.positional_help("[optional args]").show_positional_help();
-    options.add_options()
-    ("i, input", "Input file", cxxopts::value<std::string>(), "FILE")
-    ("l", "Emit llvm IR")
-    ("s", "Emit assembly code")
-    ("c", "Emit object code")
-    ("o, output", "Output file", cxxopts::value<std::string>()->default_value("[same-as-input]"), "FILE")
-    ("d, dump-ast", "Dump AST in XML format")
-    ("h, help", "Show help");
+    options.add_options()("i, input", "Input file",
+                          cxxopts::value<std::string>(),
+                          "FILE")("l", "Emit llvm IR")(
+        "s", "Emit assembly code")("c", "Emit object code")(
+        "o, output", "Output file",
+        cxxopts::value<std::string>()->default_value("[same-as-input]"),
+        "FILE")("d, dump-ast", "Dump AST in XML format")("h, help",
+                                                         "Show help");
     auto parse_result = options.parse(argc, argv);
     if (parse_result.count("h")) {
       std::cout << options.help({"", "Group"}) << std::endl;
@@ -69,12 +69,10 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
       switch (config_result.mode) {
         case ProgramMode::EMIT_ASSEMBLY: {
           config_result.output_filename = output_filename + ".s";
-        }
-        break;
+        } break;
         case ProgramMode::EMIT_OBJECT: {
           config_result.output_filename = output_filename + ".o";
-        }
-        break;
+        } break;
         case ProgramMode::EMIT_LLVM_IR: {
           config_result.output_filename = output_filename + ".ll";
         }
@@ -90,25 +88,35 @@ ProgramConfig parse_program_options(int argc, char* argv[]) {
   }
 }
 
+void error_exit() {
+  std::cerr << "Error occurred, exiting..." << std::endl;
+  exit(1);
+}
+
 int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
   ProgramContext context;
   Driver driver(context);
-  std::cout << "in :" << config.input_filename << " out :" << config.output_filename << std::endl;
+  std::cout << "in :" << config.input_filename
+            << " out :" << config.output_filename << std::endl;
   bool res = driver.parse_file(config.input_filename);
   if (res == false) {
-    std::cerr << "Error occurred, exiting..." << std::endl;
-    return 1;
+    error_exit();
   }
   if (config.mode == ProgramMode::DUMP_AST) {
     Printer printer(std::cout);
     context.get_program()->accept(printer);
   } else {
-    //TODO: add semantic check
+    // TODO: add semantic check
     // SemanticChecker checker;
     // context.get_program()->accept(checker);
     CodeGenerator generator(config.input_filename);
-    context.get_program()->accept(generator);
+    try {
+      context.get_program()->accept(generator);
+    } catch (std::logic_error& e) {
+      std::cerr << e.what() << std::endl;
+      error_exit();
+    }
     if (config.mode == ProgramMode::EMIT_LLVM_IR) {
       generator.output(config.output_filename);
     }

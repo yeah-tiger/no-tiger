@@ -15,12 +15,12 @@ namespace ntc {
 static llvm::LLVMContext llvm_context;
 
 struct SymbolRecord {
-  SymbolRecord() {};
+  SymbolRecord(){};
 
-  SymbolRecord(llvm::Value* _val, bool _is_const)
-      : val(_val), is_const(_is_const) {}
-
+  SymbolRecord(llvm::Value* _val, llvm::Type* _type, bool _is_const)
+      : val(_val), is_const(_is_const), type(_type) {}
   llvm::Value* val;
+  llvm::Type* type;
   bool is_const;
 };
 
@@ -32,7 +32,10 @@ class SymbolTable {
 
   bool find_symbol(const std::string& name);
 
-  void add_symbol(const std::string& name, llvm::Value* val, bool is_const);
+  bool find_symbol_local(const std::string& name);
+
+  void add_symbol(const std::string& name, llvm::Value* val, llvm::Type* type,
+                  bool is_const);
 
   SymbolRecord* get_symbol(const std::string& name);
 
@@ -82,9 +85,17 @@ class CodeGenerator final : public IRVisitor {
   std::map<std::string, llvm::Value*> locals_;
   llvm::IRBuilder<> builder_;
   std::string module_id_;
+  llvm::Type* cur_function_return_type_;
+  std::string cur_function_name_;
+  bool is_func_def;
+  SymbolTable symbol_table_;
 
   llvm::Type* get_llvm_type(DeclarationSpecifier& declaration_specifier);
 
   bool get_const(DeclarationSpecifier& declaration_specifier);
+
+  void codegen_error(const std::string& msg);
+
+  void type_check(llvm::Type* lhs_type, llvm::Type* rhs_type, llvm::Value** rhs);
 };
 }  // namespace ntc
