@@ -98,6 +98,6 @@ class CodeGenerator final : public IRVisitor {
 
   void codegen_error(const std::string& msg);
 
-  void type_check(llvm::Type* lhs_type, llvm::Type* rhs_type, llvm::Value** rhs);
+  void assignment_type_check(llvm::Type* lhs_type, llvm::Type* rhs_type, llvm::Value** rhs);
 };
 }  // namespace ntc

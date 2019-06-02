@@ -181,7 +181,7 @@ llvm::Value* CodeGenerator::visit(Declaration& declaration) {
       value = builder_.CreateSIToFP(value, builder_.getDoubleTy());
       rhs_type = value->getType();
     }
-    type_check(lhs_type, rhs_type, &value);
+    assignment_type_check(lhs_type, rhs_type, &value);
     builder_.CreateStore(value, local);
   }
   return nullptr;
@@ -237,12 +237,12 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
     auto* value = expr->accept(*this);
     auto* local = record->val;
     auto* lhs_type = local->getType()->getPointerElementType();
-    auto*  rhs_type = value->getType();
+    auto* rhs_type = value->getType();
     if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
       value = builder_.CreateSIToFP(value, builder_.getDoubleTy());
       rhs_type = value->getType();
     }
-    type_check(lhs_type, rhs_type, &value);
+    assignment_type_check(lhs_type, rhs_type, &value);
     builder_.CreateStore(value, local);
   }
   return nullptr;
@@ -300,23 +300,223 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
         rhs_val = builder_.CreateSIToFP(rhs_val, builder_.getDoubleTy());
         rhs_type = rhs_val->getType();
       }
-      type_check(lhs_type, rhs_type, &rhs_val);
+      assignment_type_check(lhs_type, rhs_type, &rhs_val);
       builder_.CreateStore(rhs_val, lhs_val);
       return rhs_val;
     }
   }
 
   // other op
-  // auto* lhs_val = lhs->accept(*this);
-  // auto* lhs_type = lhs_val->getType();
-  // auto* rhs_type = rhs_val->getType();
-  // type_check(lhs_type, rhs_type, &rhs_val);
+  auto* lhs_val = lhs->accept(*this);
+  auto* lhs_type = lhs_val->getType();
+  auto* rhs_type = rhs_val->getType();
 
-  return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
+  // bool
+  if (lhs_type->isIntegerTy(1) && rhs_type->isIntegerTy(1)) {
+    llvm::CmpInst::Predicate cmp;
+    switch (op) {
+      case type::BinaryOp::EQUAL:
+        cmp = llvm::CmpInst::ICMP_EQ;
+        break;
+      case type::BinaryOp::NOT_EQUAL:
+        cmp = llvm::CmpInst::ICMP_NE;
+        break;
+      default:
+        cmp = llvm::CmpInst::FCMP_FALSE;
+    }
+    if (cmp != llvm::CmpInst::FCMP_FALSE) {
+      return builder_.CreateICmp(cmp, lhs_val, rhs_val);
+    }
+    llvm::Instruction::BinaryOps binop;
+    switch (op) {
+      case type::BinaryOp::LOGIC_AND:
+        binop = llvm::Instruction::And;
+        break;
+      case type::BinaryOp::LOGIC_OR:
+        binop = llvm::Instruction::Or;
+        break;
+      default:
+        codegen_error("type error: boolean " + to_string(op) + " boolean");
+    }
+    return builder_.CreateBinOp(binop, lhs_val, rhs_val);
+  }
+  // char
+  if (lhs_type->isIntegerTy(8) && rhs_type->isIntegerTy(8)) {
+    llvm::CmpInst::Predicate cmp;
+    switch (op) {
+      case type::BinaryOp::LESS:
+        cmp = llvm::CmpInst::ICMP_SLT;
+        break;
+      case type::BinaryOp::GREATER:
+        cmp = llvm::CmpInst::ICMP_SGT;
+        break;
+      case type::BinaryOp::LESS_EQUAL:
+        cmp = llvm::CmpInst::ICMP_SLE;
+        break;
+      case type::BinaryOp::GREATER_EQUAL:
+        cmp = llvm::CmpInst::ICMP_SGE;
+        break;
+      case type::BinaryOp::EQUAL:
+        cmp = llvm::CmpInst::ICMP_EQ;
+        break;
+      case type::BinaryOp::NOT_EQUAL:
+        cmp = llvm::CmpInst::ICMP_NE;
+        break;
+      default:
+        codegen_error("type error: char " + to_string(op) + " char");
+    }
+    return builder_.CreateICmp(cmp, lhs_val, rhs_val);
+  }
+
+  // string
+  if (lhs_type->isPointerTy() || rhs_type->isPointerTy()) {
+    codegen_error("no supported op other than assignment for string");
+    return nullptr;
+  }
+
+  // fp
+  if ((lhs_type->isFloatTy() || lhs_type->isDoubleTy()) ||
+      (rhs_type->isFloatTy() || rhs_type->isDoubleTy())) {
+    llvm::Value* lhs_val_tmp = lhs_val;
+    llvm::Value* rhs_val_tmp = rhs_val;
+    if (lhs_type->isFloatTy()) {
+      lhs_val_tmp = builder_.CreateFPCast(lhs_val, builder_.getDoubleTy());
+    } else if (lhs_type->isIntegerTy(16) || lhs_type->isIntegerTy(32) ||
+               lhs_type->isIntegerTy(64)) {
+      lhs_val_tmp = builder_.CreateSIToFP(lhs_val, builder_.getDoubleTy());
+    } else if (lhs_type->isDoubleTy()) {
+      ;
+    } else {
+      codegen_error("floating point arithmetic: type imcompatible");
+    }
+    if (rhs_type->isFloatTy()) {
+      rhs_val_tmp = builder_.CreateFPCast(rhs_val, builder_.getDoubleTy());
+    } else if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32) ||
+               lhs_type->isIntegerTy(64)) {
+      rhs_val_tmp = builder_.CreateSIToFP(rhs_val, builder_.getDoubleTy());
+    } else if (rhs_type->isDoubleTy()) {
+      ;
+    } else {
+      codegen_error("floating point arithmetic: type imcompatible");
+    }
+    llvm::CmpInst::Predicate cmp;
+    switch (op) {
+      case type::BinaryOp::LESS:
+        cmp = llvm::CmpInst::FCMP_OLT;
+        break;
+      case type::BinaryOp::GREATER:
+        cmp = llvm::CmpInst::FCMP_OGT;
+        break;
+      case type::BinaryOp::LESS_EQUAL:
+        cmp = llvm::CmpInst::FCMP_OLE;
+        break;
+      case type::BinaryOp::GREATER_EQUAL:
+        cmp = llvm::CmpInst::FCMP_OGE;
+        break;
+      case type::BinaryOp::EQUAL:
+        cmp = llvm::CmpInst::FCMP_OEQ;
+        break;
+      case type::BinaryOp::NOT_EQUAL:
+        cmp = llvm::CmpInst::FCMP_ONE;
+        break;
+      default:
+        cmp = llvm::CmpInst::FCMP_FALSE;
+    }
+    if (cmp != llvm::CmpInst::FCMP_FALSE) {
+      return builder_.CreateFCmp(cmp, lhs_val_tmp, rhs_val_tmp);
+    }
+    llvm::Instruction::BinaryOps binop;
+    switch (op) {
+      case type::BinaryOp::ADD:
+        binop = llvm::Instruction::FAdd;
+        break;
+      case type::BinaryOp::SUB:
+        binop = llvm::Instruction::FSub;
+        break;
+      case type::BinaryOp::MUL:
+        binop = llvm::Instruction::FMul;
+        break;
+      case type::BinaryOp::DIV:
+        binop = llvm::Instruction::FDiv;
+        break;
+      default:
+        codegen_error("floating point arithmetic: unsupported op: " +
+                      to_string(op));
+    }
+    return builder_.CreateBinOp(binop, lhs_val_tmp, rhs_val_tmp);
+  }
+
+  // integer
+  if ((lhs_type->isIntegerTy(16) || lhs_type->isIntegerTy(32) ||
+       lhs_type->isIntegerTy(64)) &&
+      (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32) ||
+       rhs_type->isIntegerTy(64))) {
+    llvm::Value* lhs_val_tmp = lhs_val;
+    llvm::Value* rhs_val_tmp = rhs_val;
+    if (lhs_type->isIntegerTy(64) || rhs_type->isIntegerTy(64)) {
+      lhs_val_tmp = builder_.CreateIntCast(lhs_val, builder_.getInt64Ty(), true);
+      rhs_val_tmp = builder_.CreateIntCast(rhs_val, builder_.getInt64Ty(), true);
+    } else if (lhs_type->isIntegerTy(32) || rhs_type->isIntegerTy(32)) {
+      lhs_val_tmp = builder_.CreateIntCast(lhs_val, builder_.getInt32Ty(), true);
+      rhs_val_tmp = builder_.CreateIntCast(rhs_val, builder_.getInt32Ty(), true);  
+    }
+    llvm::CmpInst::Predicate cmp;
+    switch (op) {
+      case type::BinaryOp::LESS:
+        cmp = llvm::CmpInst::ICMP_SLT;
+        break;
+      case type::BinaryOp::GREATER:
+        cmp = llvm::CmpInst::ICMP_SGT;
+        break;
+      case type::BinaryOp::LESS_EQUAL:
+        cmp = llvm::CmpInst::ICMP_SLE;
+        break;
+      case type::BinaryOp::GREATER_EQUAL:
+        cmp = llvm::CmpInst::ICMP_SGE;
+        break;
+      case type::BinaryOp::EQUAL:
+        cmp = llvm::CmpInst::ICMP_EQ;
+        break;
+      case type::BinaryOp::NOT_EQUAL:
+        cmp = llvm::CmpInst::ICMP_NE;
+        break;
+      default:
+        cmp = llvm::CmpInst::FCMP_FALSE;
+    }
+    if (cmp != llvm::CmpInst::FCMP_FALSE) {
+      return builder_.CreateFCmp(cmp, lhs_val_tmp, rhs_val_tmp);
+    }
+    llvm::Instruction::BinaryOps binop;
+        switch (op) {
+      case type::BinaryOp::ADD:
+        binop = llvm::Instruction::Add;
+        break;
+      case type::BinaryOp::SUB:
+        binop = llvm::Instruction::Sub;
+        break;
+      case type::BinaryOp::MUL:
+        binop = llvm::Instruction::Mul;
+        break;
+      case type::BinaryOp::DIV:
+        binop = llvm::Instruction::SDiv;
+        break;
+      case type::BinaryOp::MOD:
+        binop = llvm::Instruction::SRem;
+        break;
+      default:
+        codegen_error("integer point arithmetic: unsupported op: " +
+                      to_string(op));
+    }
+    return builder_.CreateBinOp(binop, lhs_val_tmp, rhs_val_tmp);
+  }
+
+  codegen_error("binary operation: type imcompatible");
+  return nullptr;
 }
 // TODO:
 llvm::Value* CodeGenerator::visit(UnaryOperationExpression&) {
-  return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
+  codegen_error("unary operation: type imcompatible");
+  return nullptr;
 }
 
 llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
@@ -324,7 +524,7 @@ llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
   return nullptr;
 }
 // TODO:
-llvm::Value* CodeGenerator::visit(FunctionCall&) {
+llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
 
@@ -380,8 +580,9 @@ void CodeGenerator::codegen_error(const std::string& msg) {
   throw std::logic_error("Codegen: " + msg);
 }
 
-void CodeGenerator::type_check(llvm::Type* lhs_type, llvm::Type* rhs_type,
-                               llvm::Value** rhs) {
+void CodeGenerator::assignment_type_check(llvm::Type* lhs_type,
+                                          llvm::Type* rhs_type,
+                                          llvm::Value** rhs) {
   // bool
   if (lhs_type->isIntegerTy(1) && rhs_type->isIntegerTy(1)) {
     return;
