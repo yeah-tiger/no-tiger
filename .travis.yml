@@ -5,11 +5,17 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-7
     packages:
       - g++-7
+      - llvm-7
+      - llvm-7-dev
 
 script:
   - export CC=gcc-7
   - export CXX=g++-7
   - cmake --version
+  - bison --version
+  - llvm-config --version
   - bash build.sh
+  - build/ntc -i tests/fib.c

@@ -12,8 +12,7 @@ namespace type {
     CHAR,
     VOID,
     BOOL,
-    UNSIGNED,
-    SIGNED,
+    STRING,
   };
 
   enum class BinaryOp {
@@ -37,10 +36,6 @@ namespace type {
     POSITIVIZE,
     NEGATE,
     LOGIC_NOT
-  };
-
-  enum class AssginOp {
-
   };
   
   std::string to_string(Specifier specifier);

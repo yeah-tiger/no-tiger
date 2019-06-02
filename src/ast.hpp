@@ -1,11 +1,11 @@
 // AST definition, refer parser.y for grammar
 #pragma once
+#include <llvm/IR/Value.h>
 #include <cassert>
 #include <deque>
 #include <iostream>
 #include <memory>
 #include <vector>
-
 #include "type.hpp"
 #include "visitor.hpp"
 namespace ntc {
@@ -51,7 +51,8 @@ class FunctionCall;
 class AST {
  public:
   virtual ~AST() noexcept = default;
-  virtual void accept(Visitor& vistior) = 0;
+  virtual void accept(ASTVisitor& vistior) = 0;
+  virtual llvm::Value* accept(IRVisitor& visitor) = 0;
 };
 
 class BlockItem : public AST {
@@ -68,7 +69,12 @@ class ASTList final : public AST {
     item_list_.push_back(std::move(item));
   }
 
-  virtual void accept(Visitor& visitor) override { assert(false); }
+  virtual void accept(ASTVisitor& ASTVisitor) override { assert(false); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    assert(false);
+    return nullptr;
+  }
 
   auto& get_item_list() { return item_list_; }
 
@@ -111,7 +117,11 @@ class TranslationUnit final : public AST {
     external_declarations_.push_back(std::move(external_declaration));
   }
 
-  virtual void accept(Visitor& vistor) override { vistor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_declarations() { return external_declarations_; }
 
@@ -130,7 +140,11 @@ class ParameterDeclaration final : public AST {
       : declaration_specifier_(std::move(declaration_specifier)),
         identifier_(std::move(identifier)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_declaration_specifier() { return declaration_specifier_; }
 
@@ -156,7 +170,11 @@ class FunctionDefinition final : public ExternalDeclaration {
     }
   }
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_declaration_specifier() { return declaration_specifier_; }
 
@@ -175,30 +193,27 @@ class FunctionDefinition final : public ExternalDeclaration {
 
 class DeclarationSpecifier final : public AST {
  public:
-  explicit DeclarationSpecifier(std::unique_ptr<TypeSpecifier>&& type_specifier)
-      : is_const_(false) {
-    add_type_specifier(std::move(type_specifier));
-  }
+  explicit DeclarationSpecifier(std::unique_ptr<TypeSpecifier>&& type_specifer)
+      : is_const_(false), type_specifier_(std::move(type_specifer)) {}
 
   explicit DeclarationSpecifier(bool is_const) : is_const_(true) {
     assert(is_const == true);
   }
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
-  auto& get_type_specifiers() { return type_specifiers_; }
-
-  void add_type_specifier(std::unique_ptr<TypeSpecifier>&& type_specifier) {
-    assert(type_specifier != nullptr);
-    type_specifiers_.push_back(std::move(type_specifier));
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
   }
+
+  auto& get_type_specifier() { return type_specifier_; }
 
   void set_const(bool is_const) { is_const_ = is_const; }
 
   bool get_is_const() const { return is_const_; }
 
  protected:
-  std::vector<std::unique_ptr<TypeSpecifier>> type_specifiers_;
+  std::unique_ptr<TypeSpecifier> type_specifier_;
   bool is_const_;
 };
 
@@ -206,7 +221,11 @@ class Identifier final : public Expression {
  public:
   Identifier(const std::string& name) : name_(name) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   const std::string& get_name() const { return name_; }
 
@@ -218,7 +237,11 @@ class TypeSpecifier final : public AST {
  public:
   TypeSpecifier(type::Specifier specififer) : specifier_(specififer) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   type::Specifier get_specifier() const { return specifier_; }
 
@@ -228,23 +251,27 @@ class TypeSpecifier final : public AST {
 
 class Declaration final : public BlockItem {
  public:
-  Declaration(std::unique_ptr<TypeSpecifier>&& type_specifier,
+  Declaration(std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
               std::unique_ptr<Identifier>&& identifer,
               std::unique_ptr<Initializer>&& initializer = nullptr)
-      : type_specifier_(std::move(type_specifier)),
+      : declaration_specifier_(std::move(declaration_specifier)),
         identifer_(std::move(identifer)),
         initializer_(std::move(initializer)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
-  auto& get_type_specifier() { return type_specifier_; }
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
+
+  auto& get_declaration_specifier() { return declaration_specifier_; }
 
   auto& get_identifier() { return identifer_; }
 
   auto& get_initializer() { return initializer_; }
 
  protected:
-  std::unique_ptr<TypeSpecifier> type_specifier_;
+  std::unique_ptr<DeclarationSpecifier> declaration_specifier_;
   std::unique_ptr<Identifier> identifer_;
   std::unique_ptr<Initializer> initializer_;
 };
@@ -254,7 +281,11 @@ class Initializer final : public AST {
   Initializer(std::unique_ptr<Expression>&& expression)
       : expression_(std::move(expression)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_expression() { return expression_; }
 
@@ -271,7 +302,11 @@ class CompoundStatement final : public Statement {
     }
   }
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_block_item_list() { return block_item_list_; }
 
@@ -284,7 +319,11 @@ class ExpressionStatement final : public Statement {
   ExpressionStatement(std::unique_ptr<Expression>&& expression)
       : expression_(std::move(expression)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_expression() { return expression_; }
 
@@ -302,7 +341,11 @@ class ReturnStatement final : public JumpStatement {
   ReturnStatement(std::unique_ptr<Expression>&& expression = nullptr)
       : expression_(std::move(expression)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_expression() { return expression_; }
 
@@ -313,7 +356,11 @@ class ReturnStatement final : public JumpStatement {
 class BreakStatement final : public JumpStatement {
  public:
   BreakStatement() = default;
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
  protected:
 };
@@ -322,7 +369,11 @@ class ContinueStatement final : public JumpStatement {
  public:
   ContinueStatement() = default;
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
  protected:
 };
@@ -341,7 +392,11 @@ class IfStatement final : public SelectionStatement {
         then_statement_(std::move(then_statement)),
         else_statement_(std::move(else_statement)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_if_expression() { return if_expression_; }
 
@@ -367,7 +422,11 @@ class WhileStatement final : public IterationStatement {
       : while_expression_(std::move(while_expression)),
         loop_statement_(std::move(loop_statement)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_while_expression() { return while_expression_; }
 
@@ -389,7 +448,11 @@ class ForStatement final : public IterationStatement {
         iteraion_expression_(std::move(iteraion_expression)),
         loop_statement_(std::move(loop_statement)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_init_clause() { return init_clause_; }
 
@@ -416,7 +479,11 @@ class IntegerExpression final : public ConstantExpression {
  public:
   IntegerExpression(int val) : val_(val) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   int get_val() { return val_; }
 
@@ -428,7 +495,11 @@ class FloatExpression final : public ConstantExpression {
  public:
   FloatExpression(double val) : val_(val) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   double get_val() { return val_; }
 
@@ -440,7 +511,11 @@ class BooleanExpression final : public ConstantExpression {
  public:
   BooleanExpression(bool val) : val_(val) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   bool get_val() { return val_; }
 
@@ -456,7 +531,11 @@ class CharacterExpression final : public ConstantExpression {
     return input.length() == 1;
   }
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   char get_val() { return val_; }
 
@@ -468,7 +547,11 @@ class StringLiteralExpression final : public ConstantExpression {
  public:
   StringLiteralExpression(const std::string& val) : val_(val) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   std::string get_val() { return val_; }
 
@@ -483,7 +566,11 @@ class BinaryOperationExpression final : public Expression {
                             std::unique_ptr<Expression>&& rhs)
       : op_type_(op_type), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_lhs() { return lhs_; }
 
@@ -504,7 +591,11 @@ class UnaryOperationExpression final : public Expression {
 
       : op_type_(op_type), operand_(std::move(operand)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_operand() { return operand_; }
 
@@ -524,7 +615,11 @@ class ConditionalExpression final : public Expression {
         true_expression_(std::move(true_expression)),
         false_expression_(std::move(false_expression)) {}
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_cond_expression() { return cond_expression_; }
 
@@ -548,7 +643,11 @@ class FunctionCall final : public Expression {
     }
   }
 
-  virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
 
   auto& get_target() { return target_; }
 

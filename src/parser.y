@@ -90,7 +90,7 @@ using namespace ntc;
 %define parse.assert
 
 %token IDENTIFIER
-%token INT FLOAT DOUBLE SHORT LONG CHAR VOID BOOL SIGNED UNSIGNED
+%token INT FLOAT DOUBLE SHORT LONG CHAR VOID BOOL STRING
 %token CONST
 %token INTEGER REAL BOOLEAN CHARACTER STRING_LITERAL
 %token END 0 "end of file"
@@ -160,17 +160,13 @@ type_specifier
       {
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::VOID);
       }
-      | UNSIGNED
-      {
-        $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::UNSIGNED);
-      }
-      | SIGNED
-      {
-        $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::SIGNED);
-      }
       | BOOL
       {
         $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::BOOL);
+      }
+      | STRING
+      {
+        $$ = make_ast<TypeSpecifier>(ntc::type::Specifier::STRING);
       }
       ;
 
@@ -179,18 +175,9 @@ declaration_specifiers
       {
         $$ = make_ast<DeclarationSpecifier>(std::move($1));
       }
-      | type_specifier declaration_specifiers
+      | CONST type_specifier
       {
-        $$ = std::move($2);
-        $$->add_type_specifier(std::move($1));
-      }
-      | CONST
-      {
-        $$ = make_ast<DeclarationSpecifier>(true);
-      }
-      | CONST declaration_specifiers
-      {
-        $$ = std::move($2);
+        $$ = make_ast<DeclarationSpecifier>(std::move($2));
         $$->set_const(true);
       }
       ;
@@ -446,10 +433,6 @@ conditional_expression
       {
         $$ = std::move($1);
       }
-      | logical_or_expression '?' expression ':' conditional_expression
-      {
-        $$ = make_ast<ConditionalExpression>(std::move($1), std::move($3), std::move($5));
-      }
       ;
 
 assignment_expression
@@ -459,6 +442,7 @@ assignment_expression
       }
       | unary_expression '=' assignment_expression
       {
+        //auto identifier = make_ast<Identifier>($1);
         $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move($1), std::move($3));
       }
       ;
@@ -570,12 +554,12 @@ initializer
       ;
 
 declaration
-      : type_specifier IDENTIFIER ';'
+      : declaration_specifiers IDENTIFIER ';'
       {
         auto identifier = make_ast<Identifier>($2);
         $$ = make_ast<Declaration>(std::move($1), std::move(identifier));
       }
-      | type_specifier IDENTIFIER '=' initializer ';'
+      | declaration_specifiers IDENTIFIER '=' initializer ';'
       {
         auto identifier = make_ast<Identifier>($2);
         $$ = make_ast<Declaration>(std::move($1), std::move(identifier), std::move($4));

@@ -3,7 +3,7 @@
 #include "ast.hpp"
 #include "visitor.hpp"
 namespace ntc {
-class Printer final : public Visitor {
+class Printer final : public ASTVisitor {
  public:
   Printer(std::ostream& _os);
 

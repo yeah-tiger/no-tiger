@@ -64,8 +64,7 @@ using token = ntc::Parser::token;
 "char"          { return token::CHAR; }
 "void"          { return token::VOID; }
 "bool"          { return token::BOOL; }
-"unsigned"      { return token::UNSIGNED; }
-"signed"        { return token::SIGNED; }
+"string"        { return token::STRING; }
 
 "true"          { 
                   yylval->build(true);
@@ -124,8 +123,6 @@ using token = ntc::Parser::token;
 ">"             { return ('>'); }
 "!"             { return ('!'); }
 
-":"             { return (':'); }
-"?"             { return ('?'); }
 ","             { return (','); }
 ";"             { return (';'); }
 "("			        { return ('('); }
