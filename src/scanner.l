@@ -123,8 +123,6 @@ using token = ntc::Parser::token;
 ">"             { return ('>'); }
 "!"             { return ('!'); }
 
-":"             { return (':'); }
-"?"             { return ('?'); }
 ","             { return (','); }
 ";"             { return (';'); }
 "("			        { return ('('); }

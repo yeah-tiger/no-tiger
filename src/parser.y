@@ -433,10 +433,6 @@ conditional_expression
       {
         $$ = std::move($1);
       }
-      | logical_or_expression '?' expression ':' conditional_expression
-      {
-        $$ = make_ast<ConditionalExpression>(std::move($1), std::move($3), std::move($5));
-      }
       ;
 
 assignment_expression
@@ -444,10 +440,10 @@ assignment_expression
       {
         $$ = std::move($1);
       }
-      | IDENTIFIER '=' assignment_expression
+      | unary_expression '=' assignment_expression
       {
-        auto identifier = make_ast<Identifier>($1);
-        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move(identifier), std::move($3));
+        //auto identifier = make_ast<Identifier>($1);
+        $$ = make_ast<BinaryOperationExpression>(ntc::type::BinaryOp::ASSIGN, std::move($1), std::move($3));
       }
       ;
 

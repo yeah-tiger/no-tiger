@@ -222,7 +222,7 @@ llvm::Value* CodeGenerator::visit(CompoundStatement& compound_statement) {
 }
 
 llvm::Value* CodeGenerator::visit(ExpressionStatement& expression_statement) { return nullptr; }
-// TODO:
+
 llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) { 
   if (cur_function_return_type_ == nullptr) {
     codegen_error("invalid return statement");
@@ -283,16 +283,24 @@ llvm::Value* CodeGenerator::visit(StringLiteralExpression& expr) {
   return builder_.CreateGlobalStringPtr(expr.get_val());
 }
 // TODO:
-llvm::Value* CodeGenerator::visit(BinaryOperationExpression&) {
+llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
+  // auto& lhs = expr.get_lhs();
+  // auto op = expr.get_op_type();
+  // auto& rhs = expr.get_rhs();
+  // auto* lhs_val = lhs->accept(*this);
+  // auto* rhs_val = rhs->accept(*this);
+  
+  
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
 // TODO:
 llvm::Value* CodeGenerator::visit(UnaryOperationExpression&) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
 }
-// TODO:
+
 llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
-  return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);
+  assert(false);
+  return nullptr;
 }
 // TODO:
 llvm::Value* CodeGenerator::visit(FunctionCall&) {
