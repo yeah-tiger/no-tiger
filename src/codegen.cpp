@@ -286,8 +286,34 @@ llvm::Value* CodeGenerator::visit(IfStatement& statement) {
   builder_.SetInsertPoint(continue_block);
   return nullptr;
 }
-// TODO:
-llvm::Value* CodeGenerator::visit(WhileStatement&) { return nullptr; }
+
+llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
+  auto& cond = statement.get_while_expression();
+  auto& loop_statement = statement.get_loop_statement();
+
+  auto* function = builder_.GetInsertBlock()->getParent();
+  auto* while_block =
+      llvm::BasicBlock::Create(module_->getContext(), "while", function);
+  auto* loop_block = llvm::BasicBlock::Create(module_->getContext(), "loop", function);
+  auto* continue_block =
+      llvm::BasicBlock::Create(module_->getContext(), "continue");
+  builder_.CreateBr(while_block);
+  builder_.SetInsertPoint(while_block);
+  auto* cond_val = cond->accept(*this);
+  if (!cond_val->getType()->isIntegerTy(1)) {
+    codegen_error(
+        "type error: while statement needs boolean condition expression");
+  }
+  builder_.CreateCondBr(cond_val, loop_block, continue_block);
+  
+  builder_.SetInsertPoint(loop_block);
+  loop_statement->accept(*this);
+  builder_.CreateBr(while_block);
+
+  function->getBasicBlockList().push_back(continue_block);
+  builder_.SetInsertPoint(continue_block);
+  return nullptr;
+}
 // TODO:
 llvm::Value* CodeGenerator::visit(ForStatement&) { return nullptr; }
 
