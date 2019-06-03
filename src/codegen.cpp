@@ -251,8 +251,41 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
 llvm::Value* CodeGenerator::visit(BreakStatement&) { return nullptr; }
 // TODO:
 llvm::Value* CodeGenerator::visit(ContinueStatement&) { return nullptr; }
-// TODO:
-llvm::Value* CodeGenerator::visit(IfStatement&) { return nullptr; }
+
+llvm::Value* CodeGenerator::visit(IfStatement& statement) {
+  auto& if_cond = statement.get_if_expression();
+  auto& then_statement = statement.get_then_statment();
+  auto& else_statement = statement.get_else_statement();
+  auto* cond_val = if_cond->accept(*this);
+  if (!cond_val->getType()->isIntegerTy(1)) {
+    codegen_error(
+        "type error: if statement needs boolean condition expression");
+  }
+  auto* function = builder_.GetInsertBlock()->getParent();
+  if (function == nullptr) {
+    codegen_error("invalid if statement");
+  }
+  auto* then_block =
+      llvm::BasicBlock::Create(module_->getContext(), "then", function);
+  auto* else_block = llvm::BasicBlock::Create(module_->getContext(), "else");
+  auto* continue_block =
+      llvm::BasicBlock::Create(module_->getContext(), "continue");
+  builder_.CreateCondBr(cond_val, then_block, else_block);
+  builder_.SetInsertPoint(then_block);
+  then_statement->accept(*this);
+  builder_.CreateBr(continue_block);
+
+  function->getBasicBlockList().push_back(else_block);
+  builder_.SetInsertPoint(else_block);
+  if (else_statement != nullptr) {
+    else_statement->accept(*this);
+  }
+  builder_.CreateBr(continue_block);
+
+  function->getBasicBlockList().push_back(continue_block);
+  builder_.SetInsertPoint(continue_block);
+  return nullptr;
+}
 // TODO:
 llvm::Value* CodeGenerator::visit(WhileStatement&) { return nullptr; }
 // TODO:
@@ -488,7 +521,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
         cmp = llvm::CmpInst::FCMP_FALSE;
     }
     if (cmp != llvm::CmpInst::FCMP_FALSE) {
-      return builder_.CreateFCmp(cmp, lhs_val_tmp, rhs_val_tmp);
+      return builder_.CreateICmp(cmp, lhs_val_tmp, rhs_val_tmp);
     }
     llvm::Instruction::BinaryOps binop;
     switch (op) {
@@ -584,7 +617,16 @@ llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
     if (args.size() > 1) {
       codegen_error("print: too many arguments");
     }
-    return print_call(args[0]);
+    return print_call(args[0], false);
+  };
+  if (identifier->get_name() == "println") {
+    if (args.size() < 1) {
+      codegen_error("println: too few arguments");
+    }
+    if (args.size() > 1) {
+      codegen_error("println: too many arguments");
+    }
+    return print_call(args[0], true);
   };
   if (identifier->get_name() == "input") {
     if (args.size() < 1) {
@@ -701,7 +743,7 @@ void CodeGenerator::assignment_type_check(llvm::Type* lhs_type,
   codegen_error("type incompatible");
 }
 
-llvm::Value* CodeGenerator::print_call(llvm::Value* arg) {
+llvm::Value* CodeGenerator::print_call(llvm::Value* arg, bool new_line) {
   auto* char_ptr = builder_.getInt8Ty()->getPointerTo();
   auto* printf_type =
       llvm::FunctionType::get(builder_.getInt32Ty(), char_ptr, true);
@@ -722,6 +764,9 @@ llvm::Value* CodeGenerator::print_call(llvm::Value* arg) {
     format_string = "%s";
   } else {
     codegen_error("print: incompatible type");
+  }
+  if (new_line) {
+    format_string += "\n";
   }
   StringLiteralExpression expr(format_string);
   parameters[0] = expr.accept(*this);
