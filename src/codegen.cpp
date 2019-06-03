@@ -247,10 +247,16 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
   }
   return nullptr;
 }
-// TODO:
-llvm::Value* CodeGenerator::visit(BreakStatement&) { return nullptr; }
-// TODO:
-llvm::Value* CodeGenerator::visit(ContinueStatement&) { return nullptr; }
+
+llvm::Value* CodeGenerator::visit(BreakStatement&) {
+  assert(false);
+  return nullptr;
+}
+
+llvm::Value* CodeGenerator::visit(ContinueStatement&) {
+  assert(false);
+  return nullptr;
+}
 
 llvm::Value* CodeGenerator::visit(IfStatement& statement) {
   auto& if_cond = statement.get_if_expression();
@@ -294,7 +300,8 @@ llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
   auto* function = builder_.GetInsertBlock()->getParent();
   auto* while_block =
       llvm::BasicBlock::Create(module_->getContext(), "while", function);
-  auto* loop_block = llvm::BasicBlock::Create(module_->getContext(), "loop", function);
+  auto* loop_block =
+      llvm::BasicBlock::Create(module_->getContext(), "loop", function);
   auto* continue_block =
       llvm::BasicBlock::Create(module_->getContext(), "continue");
   builder_.CreateBr(while_block);
@@ -305,7 +312,7 @@ llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
         "type error: while statement needs boolean condition expression");
   }
   builder_.CreateCondBr(cond_val, loop_block, continue_block);
-  
+
   builder_.SetInsertPoint(loop_block);
   loop_statement->accept(*this);
   builder_.CreateBr(while_block);
@@ -314,8 +321,45 @@ llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
   builder_.SetInsertPoint(continue_block);
   return nullptr;
 }
-// TODO:
-llvm::Value* CodeGenerator::visit(ForStatement&) { return nullptr; }
+
+llvm::Value* CodeGenerator::visit(ForStatement& statement) {
+  auto& init = statement.get_init_clause();
+  auto& cond = statement.get_cond_expression();
+  auto& iter = statement.get_iteration_expression();
+  auto& loop_statement = statement.get_loop_statement();
+  auto* function = builder_.GetInsertBlock()->getParent();
+  auto* for_block =
+      llvm::BasicBlock::Create(module_->getContext(), "for", function);
+  auto* loop_block =
+      llvm::BasicBlock::Create(module_->getContext(), "loop", function);
+  auto* continue_block =
+      llvm::BasicBlock::Create(module_->getContext(), "continue");
+
+  if (init->get_expression() != nullptr) {
+    init->accept(*this);
+  }
+  builder_.CreateBr(for_block);
+  builder_.SetInsertPoint(for_block);
+  if (cond->get_expression() == nullptr) {
+    codegen_error("error: for statement need a boolean expression for judgement");
+  }
+  auto* cond_val = cond->get_expression()->accept(*this);
+  if (!cond_val->getType()->isIntegerTy(1)) {
+    codegen_error(
+        "type error: for statement needs boolean condition expression");
+  }
+  builder_.CreateCondBr(cond_val, loop_block, continue_block);
+  builder_.SetInsertPoint(loop_block);
+  loop_statement->accept(*this);
+  if (iter != nullptr) {
+    iter->accept(*this);
+  }
+  builder_.CreateBr(for_block);
+
+  function->getBasicBlockList().push_back(continue_block);
+  builder_.SetInsertPoint(continue_block);
+  return nullptr;
+}
 
 llvm::Value* CodeGenerator::visit(Expression& expression) {
   return llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 10);

@@ -64,7 +64,7 @@ python tools/visualize.py input.xml
 
 - [x] XML AST format output
 
-- [ ] LLVM codegen
+- [x] LLVM codegen
 
 - [ ] Support builtin array
 
