@@ -387,7 +387,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
     } else if (lhs_type->isDoubleTy()) {
       ;
     } else {
-      codegen_error("floating point arithmetic: type imcompatible");
+      codegen_error("floating point arithmetic: type incompatible");
     }
     if (rhs_type->isFloatTy()) {
       rhs_val_tmp = builder_.CreateFPCast(rhs_val, builder_.getDoubleTy());
@@ -397,7 +397,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
     } else if (rhs_type->isDoubleTy()) {
       ;
     } else {
-      codegen_error("floating point arithmetic: type imcompatible");
+      codegen_error("floating point arithmetic: type incompatible");
     }
     llvm::CmpInst::Predicate cmp;
     switch (op) {
@@ -514,7 +514,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
     return builder_.CreateBinOp(binop, lhs_val_tmp, rhs_val_tmp);
   }
 
-  codegen_error("binary operation: type imcompatible");
+  codegen_error("binary operation: type incompatible");
   return nullptr;
 }
 
@@ -556,7 +556,7 @@ llvm::Value* CodeGenerator::visit(UnaryOperationExpression& expr) {
                       " for integer");
     }
   }
-  codegen_error("unary operation: type imcompatible");
+  codegen_error("unary operation: type incompatible");
   return nullptr;
 }
 
@@ -564,27 +564,47 @@ llvm::Value* CodeGenerator::visit(ConditionalExpression&) {
   assert(false);
   return nullptr;
 }
-// TODO:
+
 llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
   auto& target = function_call.get_target();
+  auto& argument_list = function_call.get_argument_list();
   Identifier* identifier = dynamic_cast<Identifier*>(target.get());
+  std::vector<llvm::Value*> args;
+  for (auto& arg : argument_list) {
+    auto* val = arg->accept(*this);
+    args.push_back(val);
+  }
   if (identifier == nullptr) {
     codegen_error("cannot call on rvalue");
   }
+  if (identifier->get_name() == "print") {
+    if (args.size() < 1) {
+      codegen_error("print: too few arguments");
+    }
+    if (args.size() > 1) {
+      codegen_error("print: too many arguments");
+    }
+    return print_call(args[0]);
+  };
+  if (identifier->get_name() == "input") {
+    if (args.size() < 1) {
+      codegen_error("input: too few arguments");
+    }
+    if (args.size() > 1) {
+      codegen_error("input: too many arguments");
+    }
+    return input_call(*(argument_list[0]));
+  };
+
   auto* function = module_->getFunction(identifier->get_name());
   if (function == nullptr) {
     codegen_error("invalid function: " + identifier->get_name());
   }
-  auto& argument_list = function_call.get_argument_list();
+
   if (function->arg_size() != argument_list.size()) {
     codegen_error("invalid argument number: " + identifier->get_name());
   }
-  std::vector<llvm::Value*> args;
-  for (auto& arg: argument_list) {
-    auto* val = arg->accept(*this);
-    args.push_back(val);
-  }
-  return builder_.CreateCall(function, args);  
+  return builder_.CreateCall(function, args);
 }
 
 void CodeGenerator::output(const std::string& filename) {
@@ -678,7 +698,64 @@ void CodeGenerator::assignment_type_check(llvm::Type* lhs_type,
       return;
     }
   }
-  codegen_error("type imcompatible");
+  codegen_error("type incompatible");
+}
+
+llvm::Value* CodeGenerator::print_call(llvm::Value* arg) {
+  auto* char_ptr = builder_.getInt8Ty()->getPointerTo();
+  auto* printf_type =
+      llvm::FunctionType::get(builder_.getInt32Ty(), char_ptr, true);
+  auto* printf_func = module_->getOrInsertFunction("printf", printf_type);
+  std::string format_string;
+  std::vector<llvm::Value*> parameters;
+  parameters.resize(2);
+  parameters[1] = arg;
+  auto* type = arg->getType();
+  if (type->isIntegerTy(8)) {
+    format_string = "%c";
+  } else if (type->isIntegerTy(1) || type->isIntegerTy(16) ||
+             type->isIntegerTy(32) || type->isIntegerTy(64)) {
+    format_string = "%d";
+  } else if (type->isFloatTy() || type->isDoubleTy()) {
+    format_string = "%lf";
+  } else if (type->isPointerTy()) {
+    format_string = "%s";
+  } else {
+    codegen_error("print: incompatible type");
+  }
+  StringLiteralExpression expr(format_string);
+  parameters[0] = expr.accept(*this);
+  return builder_.CreateCall(printf_func, parameters);
+}
+
+llvm::Value* CodeGenerator::input_call(Expression& expr) {
+  Identifier* identifier = dynamic_cast<Identifier*>(&expr);
+  if (identifier == nullptr) {
+    codegen_error("cannot call input on rvalue");
+  }
+  auto* identifier_ptr = get_identifier_ptr(identifier);
+  auto* char_ptr = builder_.getInt8Ty()->getPointerTo();
+  auto* scanf_type =
+      llvm::FunctionType::get(builder_.getInt32Ty(), char_ptr, true);
+  auto* scanf_func = module_->getOrInsertFunction("scanf", scanf_type);
+  std::string format_string;
+  std::vector<llvm::Value*> parameters;
+  parameters.resize(2);
+  parameters[1] = identifier_ptr;
+  auto* type = identifier_ptr->getType()->getPointerElementType();
+  if (type->isIntegerTy(8)) {
+    format_string = "%c";
+  } else if (type->isIntegerTy(1) || type->isIntegerTy(16) ||
+             type->isIntegerTy(32) || type->isIntegerTy(64)) {
+    format_string = "%d";
+  } else if (type->isFloatTy() || type->isDoubleTy()) {
+    format_string = "%lf";
+  } else {
+    codegen_error("input: incompatible type");
+  }
+  StringLiteralExpression tmp_expr(format_string);
+  parameters[0] = tmp_expr.accept(*this);
+  return builder_.CreateCall(scanf_func, parameters);
 }
 
 }  // namespace ntc
