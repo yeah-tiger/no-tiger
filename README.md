@@ -1,7 +1,7 @@
 # no-tiger
 Not Ordinary Tiger Language 
 
-[![Build Status](https://travis-ci.com/TH3CHARLie/no-tiger.svg?branch=master)](https://travis-ci.com/TH3CHARLie/no-tiger)
+[![Build Status](https://travis-ci.org/yeah-tiger/no-tiger.svg?branch=master)](https://travis-ci.org/yeah-tiger/no-tiger)
 
 ## Introduction
 
