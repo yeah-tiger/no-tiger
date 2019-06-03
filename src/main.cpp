@@ -107,9 +107,6 @@ int main(int argc, char* argv[]) {
     Printer printer(std::cout);
     context.get_program()->accept(printer);
   } else {
-    // TODO: add semantic check
-    // SemanticChecker checker;
-    // context.get_program()->accept(checker);
     CodeGenerator generator(config.input_filename);
     try {
       context.get_program()->accept(generator);

@@ -18,4 +18,3 @@ script:
   - bison --version
   - llvm-config --version
   - bash build.sh
-  - build/ntc -i tests/fib.c

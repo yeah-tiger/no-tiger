@@ -99,5 +99,9 @@ class CodeGenerator final : public IRVisitor {
   void codegen_error(const std::string& msg);
 
   void assignment_type_check(llvm::Type* lhs_type, llvm::Type* rhs_type, llvm::Value** rhs);
+
+  llvm::Value* print_call(llvm::Value* arg, bool newline);
+
+  llvm::Value* input_call(Expression& expr);
 };
 }  // namespace ntc
