@@ -1,4 +1,5 @@
 #pragma once
+#include <llvm/Target/TargetMachine.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -10,7 +11,8 @@
 #include <string>
 #include "ast.hpp"
 #include "visitor.hpp"
-// TODO:
+#include "config.hpp"
+
 namespace ntc {
 static llvm::LLVMContext llvm_context;
 
@@ -78,7 +80,7 @@ class CodeGenerator final : public IRVisitor {
   virtual llvm::Value* visit(ConditionalExpression&) override;
   virtual llvm::Value* visit(FunctionCall&) override;
 
-  void output(const std::string& filename);
+  void output(const std::string& filename, ProgramMode mode);
 
  protected:
   std::unique_ptr<llvm::Module> module_;
@@ -103,5 +105,7 @@ class CodeGenerator final : public IRVisitor {
   llvm::Value* print_call(llvm::Value* arg, bool newline);
 
   llvm::Value* input_call(Expression& expr);
+
+  void emit_code(llvm::raw_fd_ostream &fd, llvm::TargetMachine::CodeGenFileType type);
 };
 }  // namespace ntc
