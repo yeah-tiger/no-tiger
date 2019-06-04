@@ -110,6 +110,9 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
                              identifier->get_name(), module_.get());
   auto* block =
       llvm::BasicBlock::Create(module_->getContext(), "entry", function);
+  auto* return_block =
+      llvm::BasicBlock::Create(module_->getContext(), "return");
+
   builder_.SetInsertPoint(block);
   size_t index = 0;
   for (auto& arg : function->args()) {
@@ -123,10 +126,15 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
     auto* ret = builder_.CreateAlloca(return_type);
     symbol_table_.add_symbol(identifier->get_name(), ret, return_type, false);
   }
+  cur_return_block = return_block;
   cur_function_name_ = identifier->get_name();
   cur_function_return_type_ = return_type;
   is_func_def = true;
+  is_return_happened = false;
   visit(*compound_statment);
+
+  function->getBasicBlockList().push_back(return_block);
+  builder_.SetInsertPoint(return_block);
   if (!return_type->isVoidTy()) {
     auto* val = symbol_table_.get_symbol(identifier->get_name())->val;
     auto* load = builder_.CreateLoad(val);
@@ -137,6 +145,7 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
   llvm::verifyFunction(*function);
   symbol_table_.pop_table();
 
+  cur_return_block = nullptr;
   cur_function_name_ = "";
   cur_function_return_type_ = nullptr;
   return nullptr;
@@ -210,7 +219,9 @@ llvm::Value* CodeGenerator::visit(CompoundStatement& compound_statement) {
   }
   auto& block_item_list = compound_statement.get_block_item_list();
   for (auto& block_item : block_item_list) {
-    block_item->accept(*this);
+    if (!is_return_happened)  {
+      block_item->accept(*this);
+    }
   }
   if (!is_func_def_ori) {
     symbol_table_.pop_table();
@@ -249,6 +260,11 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
     assignment_type_check(lhs_type, rhs_type, &value);
     builder_.CreateStore(value, local);
   }
+  if (cur_return_block == nullptr) {
+    codegen_error("invalid return statement");
+  }
+  builder_.CreateBr(cur_return_block);
+  is_return_happened = true;
   return nullptr;
 }
 
@@ -282,16 +298,24 @@ llvm::Value* CodeGenerator::visit(IfStatement& statement) {
       llvm::BasicBlock::Create(module_->getContext(), "continue");
   builder_.CreateCondBr(cond_val, then_block, else_block);
   builder_.SetInsertPoint(then_block);
+  
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   then_statement->accept(*this);
-  builder_.CreateBr(continue_block);
+  if (!is_return_happened) {
+    builder_.CreateBr(continue_block);
+  }
 
   function->getBasicBlockList().push_back(else_block);
   builder_.SetInsertPoint(else_block);
+  is_return_happened = false;
   if (else_statement != nullptr) {
     else_statement->accept(*this);
   }
-  builder_.CreateBr(continue_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(continue_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;
@@ -318,9 +342,13 @@ llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
   builder_.CreateCondBr(cond_val, loop_block, continue_block);
 
   builder_.SetInsertPoint(loop_block);
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   loop_statement->accept(*this);
-  builder_.CreateBr(while_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(while_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;
@@ -355,12 +383,16 @@ llvm::Value* CodeGenerator::visit(ForStatement& statement) {
   }
   builder_.CreateCondBr(cond_val, loop_block, continue_block);
   builder_.SetInsertPoint(loop_block);
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   loop_statement->accept(*this);
-  if (iter != nullptr) {
+  if (iter != nullptr && !is_return_happened) {
     iter->accept(*this);
   }
-  builder_.CreateBr(for_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(for_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;

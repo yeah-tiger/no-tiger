@@ -112,7 +112,7 @@ using token = ntc::Parser::token;
 ">="            { return token::GE_OP; }
 "=="            { return token::EQ_OP; }
 "!="            { return token::NE_OP; }
-""
+
 
 "+"             { return ('+'); }
 "-"             { return ('-'); }

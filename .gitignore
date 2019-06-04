@@ -1,6 +1,7 @@
 .vscode/
 *.exe/
 src/*.o
-test.cpp
+*.cpp
+*.c
 llvm_include/
 build/

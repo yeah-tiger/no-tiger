@@ -91,6 +91,9 @@ class CodeGenerator final : public IRVisitor {
   std::string cur_function_name_;
   bool is_func_def;
   SymbolTable symbol_table_;
+  
+  bool is_return_happened;
+  llvm::BasicBlock* cur_return_block;
 
   llvm::Type* get_llvm_type(DeclarationSpecifier& declaration_specifier);
 

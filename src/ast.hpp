@@ -21,6 +21,7 @@ class ParameterDeclaration;
 class TypeSpecifier;
 class Declaration;
 class Initializer;
+class Declarator;
 // Statement
 class Statement;
 class CompoundStatement;
@@ -47,6 +48,7 @@ class BinaryOperationExpression;
 class UnaryOperationExpression;
 class ConditionalExpression;
 class FunctionCall;
+class ArrayReference;
 
 class AST {
  public:
