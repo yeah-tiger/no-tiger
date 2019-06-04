@@ -479,7 +479,7 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
       }
       auto* record = symbol_table_.get_symbol(iden->get_name());
       if (record->is_const) {
-        codegen_error("cannot assign to a const array \'" + identifier->get_name() + "\'");
+        codegen_error("cannot assign to a const array \'" + iden->get_name() + "\'");
       }
       auto* lhs_type = lhs_val->getType()->getPointerElementType();
       auto* rhs_type = rhs_val->getType();
@@ -940,9 +940,15 @@ void CodeGenerator::assignment_type_check(llvm::Type* lhs_type,
       return;
     }
   } else if (lhs_type->isFloatTy()) {
-    // goto end to error
+    if (rhs_type->isDoubleTy() || rhs_type->isFloatTy()) {
+      *rhs = builder_.CreateFPCast(*rhs, builder_.getFloatTy());
+      return;
+    }
   } else if (lhs_type->isIntegerTy(16)) {
-    // goto end to error
+    if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32)) {
+      *rhs = builder_.CreateIntCast(*rhs, builder_.getInt16Ty(), true);
+      return;
+    }
   } else if (lhs_type->isIntegerTy(32)) {
     if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32)) {
       *rhs = builder_.CreateIntCast(*rhs, builder_.getInt32Ty(), true);
@@ -973,8 +979,11 @@ llvm::Value* CodeGenerator::print_call(llvm::Value* arg, bool new_line) {
   } else if (type->isIntegerTy(1) || type->isIntegerTy(16) ||
              type->isIntegerTy(32) || type->isIntegerTy(64)) {
     format_string = "%d";
-  } else if (type->isFloatTy() || type->isDoubleTy()) {
+  } else if (type->isDoubleTy()) {
     format_string = "%lf";
+  } else if (type->isFloatTy()) {
+    parameters[1] = builder_.CreateFPCast(parameters[1], builder_.getDoubleTy());
+    format_string = "%f";
   } else if (type->isPointerTy()) {
     format_string = "%s";
   } else {
@@ -1008,8 +1017,10 @@ llvm::Value* CodeGenerator::input_call(Expression& expr) {
   } else if (type->isIntegerTy(1) || type->isIntegerTy(16) ||
              type->isIntegerTy(32) || type->isIntegerTy(64)) {
     format_string = "%d";
-  } else if (type->isFloatTy() || type->isDoubleTy()) {
+  } else if (type->isDoubleTy()) {
     format_string = "%lf";
+  } else if (type->isFloatTy()) {
+    format_string = "%f";
   } else {
     codegen_error("input: incompatible type");
   }

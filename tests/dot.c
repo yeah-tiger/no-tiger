@@ -18,15 +18,16 @@ int main() {
     println(vector2[i]);
   }
   println("dot product");
+
   {
-    int i;
+    int i = 0;
     int vector3[9];
     while (i < 9) {
+      println(vector2[i] * vector1[i]);
       vector3[i] = vector2[i] * vector1[i];
       println(vector3[i]);
       i = i + 1;
     }
-
   }
   return 0;
 }
