@@ -66,13 +66,9 @@ python tools/visualize.py input.xml
 
 - [x] LLVM codegen
 
-- [ ] Support builtin array
+- [x] Support builtin array
 
-- [ ] Support custom data type
-
-- [ ] Support builtin I/O functions
-
-- [ ] Replace flex/bison with hand-written tokenzier/parser
+- [x] Support builtin I/O functions
 
 ## Built With
 
