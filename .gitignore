@@ -2,6 +2,5 @@
 *.exe/
 src/*.o
 *.cpp
-*.c
 llvm_include/
 build/

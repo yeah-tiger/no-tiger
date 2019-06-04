@@ -138,9 +138,9 @@ class ParameterDeclaration final : public AST {
  public:
   ParameterDeclaration(
       std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
-      std::unique_ptr<Identifier>&& identifier)
+      std::unique_ptr<Declarator>&& declarator)
       : declaration_specifier_(std::move(declaration_specifier)),
-        identifier_(std::move(identifier)) {}
+        declarator_(std::move(declarator)) {}
 
   virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
@@ -150,11 +150,11 @@ class ParameterDeclaration final : public AST {
 
   auto& get_declaration_specifier() { return declaration_specifier_; }
 
-  auto& get_identifier() { return identifier_; }
+  auto& get_declarator() { return declarator_; }
 
  protected:
   std::unique_ptr<DeclarationSpecifier> declaration_specifier_;
-  std::unique_ptr<Identifier> identifier_;
+  std::unique_ptr<Declarator> declarator_;
 };
 
 class FunctionDefinition final : public ExternalDeclaration {
@@ -254,10 +254,10 @@ class TypeSpecifier final : public AST {
 class Declaration final : public BlockItem {
  public:
   Declaration(std::unique_ptr<DeclarationSpecifier>&& declaration_specifier,
-              std::unique_ptr<Identifier>&& identifer,
+              std::unique_ptr<Declarator>&& declarator,
               std::unique_ptr<Initializer>&& initializer = nullptr)
       : declaration_specifier_(std::move(declaration_specifier)),
-        identifer_(std::move(identifer)),
+        declarator_(std::move(declarator)),
         initializer_(std::move(initializer)) {}
 
   virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
@@ -268,13 +268,13 @@ class Declaration final : public BlockItem {
 
   auto& get_declaration_specifier() { return declaration_specifier_; }
 
-  auto& get_identifier() { return identifer_; }
+  auto& get_declarator() { return declarator_; }
 
   auto& get_initializer() { return initializer_; }
 
  protected:
   std::unique_ptr<DeclarationSpecifier> declaration_specifier_;
-  std::unique_ptr<Identifier> identifer_;
+  std::unique_ptr<Declarator> declarator_;
   std::unique_ptr<Initializer> initializer_;
 };
 
@@ -293,6 +293,32 @@ class Initializer final : public AST {
 
  protected:
   std::unique_ptr<Expression> expression_;
+};
+
+class Declarator final : public AST {
+ public:
+  Declarator(std::unique_ptr<Identifier>&& identifier, bool is_array,
+             int array_length)
+      : identifier_(std::move(identifier)),
+        is_array_(is_array),
+        array_length_(array_length) {}
+
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
+
+  auto& get_identifier() { return identifier_; }
+
+  bool get_is_array() { return is_array_; }
+
+  int get_array_length() { return array_length_; }
+
+ protected:
+  std::unique_ptr<Identifier> identifier_;
+  bool is_array_;
+  int array_length_;
 };
 
 // statement
@@ -658,6 +684,27 @@ class FunctionCall final : public Expression {
  protected:
   std::unique_ptr<Expression> target_;
   std::vector<std::unique_ptr<Expression>> argument_list_;
+};
+
+class ArrayReference final : public Expression {
+ public:
+  ArrayReference(std::unique_ptr<Expression>&& target,
+                 std::unique_ptr<Expression>&& index)
+      : target_(std::move(target)), index_(std::move(index)) {}
+
+  virtual void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+
+  virtual llvm::Value* accept(IRVisitor& visitor) override {
+    return visitor.visit(*this);
+  }
+
+  auto& get_target() { return target_; }
+
+  auto& get_index() { return index_; }
+
+ protected:
+  std::unique_ptr<Expression> target_;
+  std::unique_ptr<Expression> index_;
 };
 
 // factory function

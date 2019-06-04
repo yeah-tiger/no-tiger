@@ -71,7 +71,7 @@ void Printer::visit(ParameterDeclaration& parameter_declaration) {
   os << "<ParameterDeclaration>" << std::endl;
   indent();
   visit(*(parameter_declaration.get_declaration_specifier()));
-  visit(*(parameter_declaration.get_identifier()));
+  visit(*(parameter_declaration.get_declarator()));
   dedent();
   output_space();
   os << "</ParameterDeclaration>" << std::endl;
@@ -91,8 +91,11 @@ void Printer::visit(Declaration& declaration) {
   os << "<Declaration>" << std::endl;
   indent();
   visit(*(declaration.get_declaration_specifier()));
-  visit(*(declaration.get_identifier()));
-  visit(*(declaration.get_initializer()));
+  visit(*(declaration.get_declarator()));
+  auto& initialize = declaration.get_initializer();
+  if (initialize != nullptr) {
+    visit(*initialize);
+  }
   dedent();
   output_space();
   os << "</Declaration>" << std::endl;
@@ -105,6 +108,17 @@ void Printer::visit(Initializer& initializer) {
   dedent();
   output_space();
   os << "</Initializer>" << std::endl;
+}
+
+void Printer::visit(Declarator& declarator) {
+  output_space();
+  os << "<Declarator is_array=" << std::boolalpha << declarator.get_is_array()
+     << " array_length=" << declarator.get_array_length() << ">" << std::endl;
+  indent();
+  visit(*(declarator.get_identifier()));
+  dedent();
+  output_space();
+  os << "</Declarator>" << std::endl;
 }
 
 void Printer::visit(Statement& statement) { statement.accept(*this); }
@@ -256,7 +270,9 @@ void Printer::visit(BinaryOperationExpression& binary_operation_expression) {
 
 void Printer::visit(UnaryOperationExpression& unary_operation_expression) {
   output_space();
-  os << "<UnaryOperationExpression op=\"" << type::to_string(unary_operation_expression.get_op_type())<< "\">" << std::endl;
+  os << "<UnaryOperationExpression op=\""
+     << type::to_string(unary_operation_expression.get_op_type()) << "\">"
+     << std::endl;
   indent();
   visit(*(unary_operation_expression.get_operand()));
   dedent();
@@ -270,7 +286,7 @@ void Printer::visit(ConditionalExpression& conditional_expression) {
   indent();
   visit(*(conditional_expression.get_cond_expression()));
   visit(*(conditional_expression.get_true_expression()));
-  visit(*(conditional_expression.get_false_expression()));  
+  visit(*(conditional_expression.get_false_expression()));
   dedent();
   output_space();
   os << "</ConditionalExpression>" << std::endl;
@@ -288,6 +304,17 @@ void Printer::visit(FunctionCall& function_call) {
   dedent();
   output_space();
   os << "</FunctionCall>" << std::endl;
+}
+
+void Printer::visit(ArrayReference& array_reference) {
+  output_space();
+  os << "<ArrayReference>" << std::endl;
+  indent();
+  visit(*(array_reference.get_target()));
+  visit(*(array_reference.get_index()));
+  dedent();
+  output_space();
+  os << "</ArrayReference>" << std::endl;  
 }
 
 }  // namespace ntc

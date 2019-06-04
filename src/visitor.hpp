@@ -12,6 +12,7 @@ class ParameterDeclaration;
 class TypeSpecifier;
 class Declaration;
 class Initializer;
+class Declarator;
 
 class Statement;
 class CompoundStatement;
@@ -33,6 +34,7 @@ class BinaryOperationExpression;
 class UnaryOperationExpression;
 class ConditionalExpression;
 class FunctionCall;
+class ArrayReference;
 
 class ASTVisitor {
  public:
@@ -48,6 +50,7 @@ class ASTVisitor {
   virtual void visit(TypeSpecifier&) = 0;
   virtual void visit(Declaration&) = 0;
   virtual void visit(Initializer&) = 0;
+  virtual void visit(Declarator&) = 0;
 
   virtual void visit(Statement&) = 0;
   virtual void visit(CompoundStatement&) = 0;
@@ -69,6 +72,7 @@ class ASTVisitor {
   virtual void visit(UnaryOperationExpression&) = 0;
   virtual void visit(ConditionalExpression&) = 0;
   virtual void visit(FunctionCall&) = 0;
+  virtual void visit(ArrayReference&) = 0;
 };
 
 class IRVisitor {
@@ -85,6 +89,7 @@ class IRVisitor {
   virtual llvm::Value* visit(TypeSpecifier&) = 0;
   virtual llvm::Value* visit(Declaration&) = 0;
   virtual llvm::Value* visit(Initializer&) = 0;
+  virtual llvm::Value* visit(Declarator&) = 0;
   virtual llvm::Value* visit(Statement&) = 0;
   virtual llvm::Value* visit(CompoundStatement&) = 0;
   virtual llvm::Value* visit(ExpressionStatement&) = 0;
@@ -104,5 +109,6 @@ class IRVisitor {
   virtual llvm::Value* visit(UnaryOperationExpression&) = 0;
   virtual llvm::Value* visit(ConditionalExpression&) = 0;
   virtual llvm::Value* visit(FunctionCall&) = 0;
+  virtual llvm::Value* visit(ArrayReference&) = 0;
 };
 }  // namespace ntc
