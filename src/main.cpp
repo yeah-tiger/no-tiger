@@ -15,8 +15,6 @@ int main(int argc, char* argv[]) {
   ProgramConfig config = parse_program_options(argc, argv);
   ProgramContext context;
   Driver driver(context);
-  std::cout << "in :" << config.input_filename
-            << " out :" << config.output_filename << std::endl;
   bool res = driver.parse_file(config.input_filename);
   if (res == false) {
     error_exit();

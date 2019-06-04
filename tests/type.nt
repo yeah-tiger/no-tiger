@@ -1,0 +1,24 @@
+int main() {
+  println("-----------");
+  println("begin type test");
+  println("-----------");
+
+
+  short test = 5;
+  short test2;
+  test2 = test;
+  print("short test:");
+  println(test2);
+
+  float float_test = 5.0;
+  float float_test2;
+  float_test2 = float_test;
+  print("float test:");
+  println(float_test);
+  println(float_test2);
+  
+  double test3 = float_test;
+  println(test3);
+
+  return 0;
+}
