@@ -112,8 +112,8 @@ void Printer::visit(Initializer& initializer) {
 
 void Printer::visit(Declarator& declarator) {
   output_space();
-  os << "<Declarator is_array=" << std::boolalpha << declarator.get_is_array()
-     << " array_length=" << declarator.get_array_length() << ">" << std::endl;
+  os << "<Declarator is_array=\"" << std::boolalpha << declarator.get_is_array()
+     << "\" array_length=\"" << declarator.get_array_length() << "\">" << std::endl;
   indent();
   visit(*(declarator.get_identifier()));
   dedent();
