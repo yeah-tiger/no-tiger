@@ -4,7 +4,11 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include "type.hpp"
 namespace ntc {
@@ -341,7 +345,8 @@ llvm::Value* CodeGenerator::visit(ForStatement& statement) {
   builder_.CreateBr(for_block);
   builder_.SetInsertPoint(for_block);
   if (cond->get_expression() == nullptr) {
-    codegen_error("error: for statement need a boolean expression for judgement");
+    codegen_error(
+        "error: for statement need a boolean expression for judgement");
   }
   auto* cond_val = cond->get_expression()->accept(*this);
   if (!cond_val->getType()->isIntegerTy(1)) {
@@ -719,10 +724,47 @@ llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
   return builder_.CreateCall(function, args);
 }
 
-void CodeGenerator::output(const std::string& filename) {
+void CodeGenerator::output(const std::string& filename, ProgramMode mode) {
   std::error_code ec;
   llvm::raw_fd_ostream fd(filename, ec, llvm::sys::fs::F_None);
-  module_->print(fd, nullptr);
+  if (mode == ProgramMode::EMIT_LLVM_IR) {
+    module_->print(fd, nullptr);
+  } else if (mode == ProgramMode::EMIT_ASSEMBLY) {
+    emit_code(fd, llvm::TargetMachine::CGFT_AssemblyFile);
+  } else if (mode == ProgramMode::EMIT_OBJECT) {
+    emit_code(fd, llvm::TargetMachine::CGFT_ObjectFile);
+  }
+}
+
+void CodeGenerator::emit_code(llvm::raw_fd_ostream& fd,
+                              llvm::TargetMachine::CodeGenFileType type) {
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
+  auto target_triple = llvm::sys::getDefaultTargetTriple();
+  module_->setTargetTriple(target_triple);
+
+  std::string error;
+  auto target = llvm::TargetRegistry::lookupTarget(target_triple, error);
+  if (!target) {
+    codegen_error(error);
+  }
+  auto cpu = "generic";
+  auto features = "";
+  llvm::TargetOptions opt;
+  auto rm = llvm::Optional<llvm::Reloc::Model>();
+  auto target_machine =
+      target->createTargetMachine(target_triple, cpu, features, opt, rm);
+  module_->setDataLayout(target_machine->createDataLayout());
+
+  llvm::legacy::PassManager pass;
+  if (target_machine->addPassesToEmitFile(pass, fd, nullptr, type)) {
+    codegen_error("codegeneration failed");
+  }
+  pass.run(*module_);
+  fd.flush();
 }
 
 llvm::Type* CodeGenerator::get_llvm_type(
