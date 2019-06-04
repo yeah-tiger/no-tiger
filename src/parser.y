@@ -29,6 +29,7 @@ namespace ntc{
   class TypeSpecifier;
   class Declaration;
   class Initializer;
+  class Declarator;
 
   // Statement
   class Statement;
@@ -56,6 +57,7 @@ namespace ntc{
   class UnaryOperationExpression;
   class ConditionalExpression;
   class FunctionCall;
+  class ArrayReference;
 
   template <typename T> class ASTList;
   
@@ -109,6 +111,7 @@ using namespace ntc;
 %type <std::unique_ptr<BlockItemList>> block_item_list
 %type <std::unique_ptr<Initializer>> initializer
 %type <std::unique_ptr<Declaration>> declaration
+%type <std::unique_ptr<Declarator>> declarator
 %type <std::unique_ptr<ArgumentList>> argument_expression_list
 %type <std::unique_ptr<ConstantExpression>> constant_expression
 %type <std::unique_ptr<Expression>> expression primary_expression postfix_expression unary_expression cast_expression multiplicative_expression additive_expression shift_expression relational_expression equality_expression and_expression exclusive_or_expression inclusive_or_expression logical_and_expression logical_or_expression conditional_expression assignment_expression
@@ -183,10 +186,9 @@ declaration_specifiers
       ;
 
 parameter_declaration
-      : declaration_specifiers IDENTIFIER
+      : declaration_specifiers declarator
       {
-        auto identifier = make_ast<Identifier>($2);
-        $$ = make_ast<ParameterDeclaration>(std::move($1), std::move(identifier));
+        $$ = make_ast<ParameterDeclaration>(std::move($1), std::move($2));
       }
       ;
 
@@ -273,6 +275,10 @@ postfix_expression
       | postfix_expression '(' argument_expression_list ')'
       {
         $$ = make_ast<FunctionCall>(std::move($1), std::move($3));
+      }
+      | postfix_expression '[' assignment_expression ']'
+      {
+        $$ = make_ast<ArrayReference>(std::move($1), std::move($3));
       }
       ;
 
@@ -553,16 +559,29 @@ initializer
       }
       ;
 
-declaration
-      : declaration_specifiers IDENTIFIER ';'
+declarator
+      : IDENTIFIER
       {
-        auto identifier = make_ast<Identifier>($2);
-        $$ = make_ast<Declaration>(std::move($1), std::move(identifier));
+        auto identifier = make_ast<Identifier>($1);
+        $$ = make_ast<Declarator>(std::move(identifier), false, 0);
+      }
+      | IDENTIFIER '[' INTEGER ']'
+      {
+        auto identifier = make_ast<Identifier>($1);
+        $$ = make_ast<Declarator>(std::move(identifier), true, $3);
+      }
+      ;
+
+declaration
+      : declaration_specifiers declarator ';'
+      {
+        $$ = make_ast<Declaration>(std::move($1), std::move($2));
       }
       | declaration_specifiers IDENTIFIER '=' initializer ';'
       {
         auto identifier = make_ast<Identifier>($2);
-        $$ = make_ast<Declaration>(std::move($1), std::move(identifier), std::move($4));
+        auto declarator = make_ast<Declarator>(std::move(identifier), false, 0);
+        $$ = make_ast<Declaration>(std::move($1), std::move(declarator), std::move($4));
       }
       ;
 

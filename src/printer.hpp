@@ -25,9 +25,11 @@ class Printer final : public ASTVisitor {
 
   virtual void visit(TypeSpecifier& type_specifier) override;
 
-  virtual void visit(Declaration& declaration);
+  virtual void visit(Declaration& declaration) override;
 
-  virtual void visit(Initializer& initializer);
+  virtual void visit(Initializer& initializer) override;
+
+  virtual void visit(Declarator& declarator) override;
 
   virtual void visit(Statement& statement) override;
   
@@ -69,6 +71,8 @@ class Printer final : public ASTVisitor {
   virtual void visit(ConditionalExpression& conditional_expression) override;
 
   virtual void visit(FunctionCall& function_call) override;
+
+  virtual void visit(ArrayReference& array_reference) override;
 
  private:
   void indent(int cnt = 2);

@@ -1,17 +1,17 @@
 #pragma once
-#include <llvm/Target/TargetMachine.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
+#include <llvm/Target/TargetMachine.h>
 #include <deque>
 #include <map>
 #include <memory>
 #include <string>
 #include "ast.hpp"
-#include "visitor.hpp"
 #include "config.hpp"
+#include "visitor.hpp"
 
 namespace ntc {
 static llvm::LLVMContext llvm_context;
@@ -60,6 +60,7 @@ class CodeGenerator final : public IRVisitor {
   virtual llvm::Value* visit(TypeSpecifier&) override;
   virtual llvm::Value* visit(Declaration&) override;
   virtual llvm::Value* visit(Initializer&) override;
+  virtual llvm::Value* visit(Declarator&) override;
   virtual llvm::Value* visit(Statement&) override;
   virtual llvm::Value* visit(CompoundStatement&) override;
   virtual llvm::Value* visit(ExpressionStatement&) override;
@@ -79,6 +80,7 @@ class CodeGenerator final : public IRVisitor {
   virtual llvm::Value* visit(UnaryOperationExpression&) override;
   virtual llvm::Value* visit(ConditionalExpression&) override;
   virtual llvm::Value* visit(FunctionCall&) override;
+  virtual llvm::Value* visit(ArrayReference&) override;
 
   void output(const std::string& filename, ProgramMode mode);
 
@@ -92,6 +94,9 @@ class CodeGenerator final : public IRVisitor {
   bool is_func_def;
   SymbolTable symbol_table_;
 
+  bool is_return_happened;
+  llvm::BasicBlock* cur_return_block;
+
   llvm::Type* get_llvm_type(DeclarationSpecifier& declaration_specifier);
 
   llvm::Value* get_identifier_ptr(Identifier* identifier);
@@ -100,12 +105,16 @@ class CodeGenerator final : public IRVisitor {
 
   void codegen_error(const std::string& msg);
 
-  void assignment_type_check(llvm::Type* lhs_type, llvm::Type* rhs_type, llvm::Value** rhs);
+  void assignment_type_check(llvm::Type* lhs_type, llvm::Type* rhs_type,
+                             llvm::Value** rhs);
 
   llvm::Value* print_call(llvm::Value* arg, bool newline);
 
   llvm::Value* input_call(Expression& expr);
 
-  void emit_code(llvm::raw_fd_ostream &fd, llvm::TargetMachine::CodeGenFileType type);
+  void emit_code(llvm::raw_fd_ostream& fd,
+                 llvm::TargetMachine::CodeGenFileType type);
+
+  llvm::Value* get_array_reference_ptr(ArrayReference* array_reference);
 };
 }  // namespace ntc

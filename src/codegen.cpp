@@ -3,12 +3,13 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
-#include <llvm/IR/Verifier.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/raw_ostream.h>
 #include "type.hpp"
 namespace ntc {
@@ -99,9 +100,17 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
   std::vector<std::string> parameter_names;
   for (auto& parameter : parameter_list) {
     auto& parameter_specifier = parameter->get_declaration_specifier();
-    parameter_types.push_back(get_llvm_type(*parameter_specifier));
+    auto& declarator = parameter->get_declarator();
+
+    if (declarator->get_is_array()) {
+      codegen_error("no support for array as function parameter");
+    } else {
+      auto* type = get_llvm_type(*parameter_specifier);
+      parameter_types.push_back(type);
+    }
     parameter_consts.push_back(get_const(*parameter_specifier));
-    parameter_names.push_back(parameter->get_identifier()->get_name());
+    parameter_names.push_back(
+        parameter->get_declarator()->get_identifier()->get_name());
   }
   auto* function_type =
       llvm::FunctionType::get(return_type, parameter_types, false);
@@ -110,6 +119,9 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
                              identifier->get_name(), module_.get());
   auto* block =
       llvm::BasicBlock::Create(module_->getContext(), "entry", function);
+  auto* return_block =
+      llvm::BasicBlock::Create(module_->getContext(), "return");
+
   builder_.SetInsertPoint(block);
   size_t index = 0;
   for (auto& arg : function->args()) {
@@ -123,10 +135,15 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
     auto* ret = builder_.CreateAlloca(return_type);
     symbol_table_.add_symbol(identifier->get_name(), ret, return_type, false);
   }
+  cur_return_block = return_block;
   cur_function_name_ = identifier->get_name();
   cur_function_return_type_ = return_type;
   is_func_def = true;
+  is_return_happened = false;
   visit(*compound_statment);
+
+  function->getBasicBlockList().push_back(return_block);
+  builder_.SetInsertPoint(return_block);
   if (!return_type->isVoidTy()) {
     auto* val = symbol_table_.get_symbol(identifier->get_name())->val;
     auto* load = builder_.CreateLoad(val);
@@ -137,6 +154,7 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
   llvm::verifyFunction(*function);
   symbol_table_.pop_table();
 
+  cur_return_block = nullptr;
   cur_function_name_ = "";
   cur_function_return_type_ = nullptr;
   return nullptr;
@@ -163,16 +181,28 @@ llvm::Value* CodeGenerator::visit(TypeSpecifier&) {
 
 llvm::Value* CodeGenerator::visit(Declaration& declaration) {
   auto& declaration_speicifer = declaration.get_declaration_specifier();
-  auto& identifier = declaration.get_identifier();
+  auto& declarator = declaration.get_declarator();
   auto& initializer = declaration.get_initializer();
+  auto& identifier = declarator->get_identifier();
+  bool is_array = declarator->get_is_array();
+  int array_size = declarator->get_array_length();
 
   auto* type = get_llvm_type(*declaration_speicifer);
   bool is_const = get_const(*declaration_speicifer);
-  auto* local = builder_.CreateAlloca(type);
 
   if (symbol_table_.find_symbol_local(identifier->get_name())) {
     codegen_error("varaible \'" + identifier->get_name() + "\' redeclared");
   }
+  llvm::AllocaInst* local;
+  if (is_array) {
+    if (type->isPointerTy()) {
+      codegen_error("does not support complex array");
+    }
+    local = builder_.CreateAlloca(llvm::ArrayType::get(type, array_size));
+  } else {
+    local = builder_.CreateAlloca(type);
+  }
+
   symbol_table_.add_symbol(identifier->get_name(), local, type, is_const);
 
   if (initializer != nullptr) {
@@ -196,6 +226,8 @@ llvm::Value* CodeGenerator::visit(Initializer&) {
   return nullptr;
 }
 
+llvm::Value* CodeGenerator::visit(Declarator&) { return nullptr; }
+
 llvm::Value* CodeGenerator::visit(Statement& statement) {
   return statement.accept(*this);
 }
@@ -210,7 +242,9 @@ llvm::Value* CodeGenerator::visit(CompoundStatement& compound_statement) {
   }
   auto& block_item_list = compound_statement.get_block_item_list();
   for (auto& block_item : block_item_list) {
-    block_item->accept(*this);
+    if (!is_return_happened) {
+      block_item->accept(*this);
+    }
   }
   if (!is_func_def_ori) {
     symbol_table_.pop_table();
@@ -249,6 +283,11 @@ llvm::Value* CodeGenerator::visit(ReturnStatement& return_statement) {
     assignment_type_check(lhs_type, rhs_type, &value);
     builder_.CreateStore(value, local);
   }
+  if (cur_return_block == nullptr) {
+    codegen_error("invalid return statement");
+  }
+  builder_.CreateBr(cur_return_block);
+  is_return_happened = true;
   return nullptr;
 }
 
@@ -282,16 +321,24 @@ llvm::Value* CodeGenerator::visit(IfStatement& statement) {
       llvm::BasicBlock::Create(module_->getContext(), "continue");
   builder_.CreateCondBr(cond_val, then_block, else_block);
   builder_.SetInsertPoint(then_block);
+
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   then_statement->accept(*this);
-  builder_.CreateBr(continue_block);
+  if (!is_return_happened) {
+    builder_.CreateBr(continue_block);
+  }
 
   function->getBasicBlockList().push_back(else_block);
   builder_.SetInsertPoint(else_block);
+  is_return_happened = false;
   if (else_statement != nullptr) {
     else_statement->accept(*this);
   }
-  builder_.CreateBr(continue_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(continue_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;
@@ -318,9 +365,13 @@ llvm::Value* CodeGenerator::visit(WhileStatement& statement) {
   builder_.CreateCondBr(cond_val, loop_block, continue_block);
 
   builder_.SetInsertPoint(loop_block);
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   loop_statement->accept(*this);
-  builder_.CreateBr(while_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(while_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;
@@ -355,12 +406,16 @@ llvm::Value* CodeGenerator::visit(ForStatement& statement) {
   }
   builder_.CreateCondBr(cond_val, loop_block, continue_block);
   builder_.SetInsertPoint(loop_block);
+  bool old_is_return_happened = is_return_happened;
+  is_return_happened = false;
   loop_statement->accept(*this);
-  if (iter != nullptr) {
+  if (iter != nullptr && !is_return_happened) {
     iter->accept(*this);
   }
-  builder_.CreateBr(for_block);
-
+  if (!is_return_happened) {
+    builder_.CreateBr(for_block);
+  }
+  is_return_happened = old_is_return_happened;
   function->getBasicBlockList().push_back(continue_block);
   builder_.SetInsertPoint(continue_block);
   return nullptr;
@@ -398,10 +453,15 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
   // special handle assign
   if (op == type::BinaryOp::ASSIGN) {
     Identifier* identifier = dynamic_cast<Identifier*>(lhs.get());
-    if (identifier == nullptr) {
+    ArrayReference* arr_ref = dynamic_cast<ArrayReference*>(lhs.get());
+    if (identifier == nullptr && arr_ref == nullptr) {
       codegen_error("cannot assign value to rvalue");
-    } else {
+    } else if (identifier) {
       auto* lhs_val = get_identifier_ptr(identifier);
+      auto* record = symbol_table_.get_symbol(identifier->get_name());
+      if (record->is_const) {
+        codegen_error("cannot assign to a const variable \'" + identifier->get_name() + "\'");
+      }
       auto* lhs_type = lhs_val->getType()->getPointerElementType();
       auto* rhs_type = rhs_val->getType();
       if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
@@ -411,6 +471,27 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
       assignment_type_check(lhs_type, rhs_type, &rhs_val);
       builder_.CreateStore(rhs_val, lhs_val);
       return rhs_val;
+    } else if (arr_ref) {
+      auto* lhs_val = get_array_reference_ptr(arr_ref);
+      Identifier* iden = dynamic_cast<Identifier*>(arr_ref->get_target().get());
+      if (iden == nullptr) {
+        codegen_error("fatal");
+      }
+      auto* record = symbol_table_.get_symbol(iden->get_name());
+      if (record->is_const) {
+        codegen_error("cannot assign to a const array \'" + identifier->get_name() + "\'");
+      }
+      auto* lhs_type = lhs_val->getType()->getPointerElementType();
+      auto* rhs_type = rhs_val->getType();
+      if (lhs_type->isDoubleTy() && rhs_type->isIntegerTy(32)) {
+        rhs_val = builder_.CreateSIToFP(rhs_val, builder_.getDoubleTy());
+        rhs_type = rhs_val->getType();
+      }
+      assignment_type_check(lhs_type, rhs_type, &rhs_val);
+      builder_.CreateStore(rhs_val, lhs_val);
+      return rhs_val;
+    } else {
+      codegen_error("fatal");
     }
   }
 
@@ -418,7 +499,6 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
   auto* lhs_val = lhs->accept(*this);
   auto* lhs_type = lhs_val->getType();
   auto* rhs_type = rhs_val->getType();
-
   // bool
   if (lhs_type->isIntegerTy(1) && rhs_type->isIntegerTy(1)) {
     llvm::CmpInst::Predicate cmp;
@@ -724,6 +804,10 @@ llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
   return builder_.CreateCall(function, args);
 }
 
+llvm::Value* CodeGenerator::visit(ArrayReference& array_reference) {
+  return builder_.CreateLoad(get_array_reference_ptr(&array_reference));
+}
+
 void CodeGenerator::output(const std::string& filename, ProgramMode mode) {
   std::error_code ec;
   llvm::raw_fd_ostream fd(filename, ec, llvm::sys::fs::F_None);
@@ -805,6 +889,33 @@ llvm::Value* CodeGenerator::get_identifier_ptr(Identifier* identifier) {
   return nullptr;
 }
 
+llvm::Value* CodeGenerator::get_array_reference_ptr(
+    ArrayReference* array_reference) {
+  auto& target = array_reference->get_target();
+  auto& index = array_reference->get_index();
+  Identifier* identifier = dynamic_cast<Identifier*>(target.get());
+  if (identifier == nullptr) {
+    codegen_error("cannot array index on rvalue");
+  }
+  auto* idx_value = index->accept(*this);
+  auto* idx_type = idx_value->getType();
+  std::vector<llvm::Value*> idx;
+  auto* arr = get_identifier_ptr(identifier);
+  auto* arr_type = arr->getType();
+  if (!(arr_type->isPointerTy())) {
+    codegen_error("varaible \'" + identifier->get_name() + "\' is not array");
+  }
+  if (!(idx_type->isIntegerTy(32) || idx_type->isIntegerTy(16) ||
+        idx_type->isIntegerTy(64))) {
+    codegen_error("array indexing requires integer index");
+  }
+  idx_value = builder_.CreateIntCast(idx_value, builder_.getInt32Ty(), true);
+  idx.push_back(llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 0));
+  idx.push_back(idx_value);
+
+  return builder_.CreateInBoundsGEP(arr, idx);
+}
+
 bool CodeGenerator::get_const(DeclarationSpecifier& declaration_specifier) {
   return declaration_specifier.get_is_const();
 }
@@ -829,19 +940,11 @@ void CodeGenerator::assignment_type_check(llvm::Type* lhs_type,
       return;
     }
   } else if (lhs_type->isFloatTy()) {
-    if (rhs_type->isDoubleTy() || rhs_type->isFloatTy()) {
-      *rhs = builder_.CreateFPCast(*rhs, builder_.getFloatTy());
-      return;
-    }
+    // goto end to error
   } else if (lhs_type->isIntegerTy(16)) {
-    if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32) ||
-        rhs_type->isIntegerTy(64)) {
-      *rhs = builder_.CreateIntCast(*rhs, builder_.getInt16Ty(), true);
-      return;
-    }
+    // goto end to error
   } else if (lhs_type->isIntegerTy(32)) {
-    if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32) ||
-        rhs_type->isIntegerTy(64)) {
+    if (rhs_type->isIntegerTy(16) || rhs_type->isIntegerTy(32)) {
       *rhs = builder_.CreateIntCast(*rhs, builder_.getInt32Ty(), true);
       return;
     }
