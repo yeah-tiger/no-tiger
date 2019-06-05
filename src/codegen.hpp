@@ -19,11 +19,12 @@ static llvm::LLVMContext llvm_context;
 struct SymbolRecord {
   SymbolRecord(){};
 
-  SymbolRecord(llvm::Value* _val, llvm::Type* _type, bool _is_const)
-      : val(_val), is_const(_is_const), type(_type) {}
+  SymbolRecord(llvm::Value* _val, llvm::Type* _type, bool _is_const, bool _is_array)
+      : val(_val), is_const(_is_const), type(_type), is_array(_is_array) {}
   llvm::Value* val;
   llvm::Type* type;
   bool is_const;
+  bool is_array;
 };
 
 class SymbolTable {
@@ -37,7 +38,7 @@ class SymbolTable {
   bool find_symbol_local(const std::string& name);
 
   void add_symbol(const std::string& name, llvm::Value* val, llvm::Type* type,
-                  bool is_const);
+                  bool is_const, bool is_array);
 
   SymbolRecord* get_symbol(const std::string& name);
 

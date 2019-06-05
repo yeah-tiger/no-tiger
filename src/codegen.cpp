@@ -46,10 +46,10 @@ bool SymbolTable::find_symbol_local(const std::string& name) {
 }
 
 void SymbolTable::add_symbol(const std::string& name, llvm::Value* val,
-                             llvm::Type* type, bool is_const) {
+                             llvm::Type* type, bool is_const, bool is_array) {
   assert(find_symbol_local(name) == false);
   auto& cur_table = table_stack_.back();
-  SymbolRecord to_be_add(val, type, is_const);
+  SymbolRecord to_be_add(val, type, is_const, is_array);
   cur_table[name] = to_be_add;
 }
 
@@ -103,7 +103,10 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
     auto& declarator = parameter->get_declarator();
 
     if (declarator->get_is_array()) {
-      codegen_error("no support for array as function parameter");
+      auto* type = get_llvm_type(*parameter_specifier);
+      auto* arr_type = llvm::PointerType::get(type, 0);
+      parameter_types.push_back(arr_type);
+      // codegen_error("no support for array as function parameter");
     } else {
       auto* type = get_llvm_type(*parameter_specifier);
       parameter_types.push_back(type);
@@ -126,14 +129,22 @@ llvm::Value* CodeGenerator::visit(FunctionDefinition& function_definition) {
   size_t index = 0;
   for (auto& arg : function->args()) {
     auto* local = builder_.CreateAlloca(arg.getType());
-    symbol_table_.add_symbol(parameter_names[index], local,
-                             parameter_types[index], parameter_consts[index]);
+    if (local->getType()->isPointerTy()) {
+      symbol_table_.add_symbol(parameter_names[index], local,
+                               parameter_types[index], parameter_consts[index],
+                               true);
+    } else {
+      symbol_table_.add_symbol(parameter_names[index], local,
+                               parameter_types[index], parameter_consts[index],
+                               false);
+    }
     builder_.CreateStore(&arg, local);
     ++index;
   }
   if (!return_type->isVoidTy()) {
     auto* ret = builder_.CreateAlloca(return_type);
-    symbol_table_.add_symbol(identifier->get_name(), ret, return_type, false);
+    symbol_table_.add_symbol(identifier->get_name(), ret, return_type, false,
+                             false);
   }
   cur_return_block = return_block;
   cur_function_name_ = identifier->get_name();
@@ -199,11 +210,13 @@ llvm::Value* CodeGenerator::visit(Declaration& declaration) {
       codegen_error("does not support complex array");
     }
     local = builder_.CreateAlloca(llvm::ArrayType::get(type, array_size));
+    symbol_table_.add_symbol(identifier->get_name(), local, type, is_const,
+                             true);
   } else {
     local = builder_.CreateAlloca(type);
+    symbol_table_.add_symbol(identifier->get_name(), local, type, is_const,
+                             false);
   }
-
-  symbol_table_.add_symbol(identifier->get_name(), local, type, is_const);
 
   if (initializer != nullptr) {
     auto& expression = initializer->get_expression();
@@ -460,7 +473,8 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
       auto* lhs_val = get_identifier_ptr(identifier);
       auto* record = symbol_table_.get_symbol(identifier->get_name());
       if (record->is_const) {
-        codegen_error("cannot assign to a const variable \'" + identifier->get_name() + "\'");
+        codegen_error("cannot assign to a const variable \'" +
+                      identifier->get_name() + "\'");
       }
       auto* lhs_type = lhs_val->getType()->getPointerElementType();
       auto* rhs_type = rhs_val->getType();
@@ -479,7 +493,8 @@ llvm::Value* CodeGenerator::visit(BinaryOperationExpression& expr) {
       }
       auto* record = symbol_table_.get_symbol(iden->get_name());
       if (record->is_const) {
-        codegen_error("cannot assign to a const array \'" + iden->get_name() + "\'");
+        codegen_error("cannot assign to a const array \'" + iden->get_name() +
+                      "\'");
       }
       auto* lhs_type = lhs_val->getType()->getPointerElementType();
       auto* rhs_type = rhs_val->getType();
@@ -759,7 +774,22 @@ llvm::Value* CodeGenerator::visit(FunctionCall& function_call) {
   Identifier* identifier = dynamic_cast<Identifier*>(target.get());
   std::vector<llvm::Value*> args;
   for (auto& arg : argument_list) {
-    auto* val = arg->accept(*this);
+    llvm::Value* val = nullptr;
+    Identifier* ident_tmp = dynamic_cast<Identifier*>(arg.get());
+    if (ident_tmp) {
+      auto* record = symbol_table_.get_symbol(ident_tmp->get_name());
+      auto* ptr = get_identifier_ptr(ident_tmp);
+      if (record->is_array) {
+        std::vector<llvm::Value*> idx;
+        idx.push_back(llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 0));
+        idx.push_back(llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 0));
+        val = builder_.CreateInBoundsGEP(ptr, idx);
+      } else {
+        val = builder_.CreateLoad(ptr);
+      }
+    } else {
+      val = arg->accept(*this);
+    }
     args.push_back(val);
   }
   if (identifier == nullptr) {
@@ -902,6 +932,7 @@ llvm::Value* CodeGenerator::get_array_reference_ptr(
   std::vector<llvm::Value*> idx;
   auto* arr = get_identifier_ptr(identifier);
   auto* arr_type = arr->getType();
+  auto* ptr_type = arr_type->getPointerElementType();
   if (!(arr_type->isPointerTy())) {
     codegen_error("varaible \'" + identifier->get_name() + "\' is not array");
   }
@@ -909,8 +940,13 @@ llvm::Value* CodeGenerator::get_array_reference_ptr(
         idx_type->isIntegerTy(64))) {
     codegen_error("array indexing requires integer index");
   }
+
   idx_value = builder_.CreateIntCast(idx_value, builder_.getInt32Ty(), true);
-  idx.push_back(llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 0));
+  if (ptr_type->isArrayTy()) {
+    idx.push_back(llvm::ConstantInt::getSigned(builder_.getInt32Ty(), 0));
+  } else {
+    arr = builder_.CreateLoad(arr);
+  }
   idx.push_back(idx_value);
 
   return builder_.CreateInBoundsGEP(arr, idx);
@@ -982,7 +1018,8 @@ llvm::Value* CodeGenerator::print_call(llvm::Value* arg, bool new_line) {
   } else if (type->isDoubleTy()) {
     format_string = "%lf";
   } else if (type->isFloatTy()) {
-    parameters[1] = builder_.CreateFPCast(parameters[1], builder_.getDoubleTy());
+    parameters[1] =
+        builder_.CreateFPCast(parameters[1], builder_.getDoubleTy());
     format_string = "%f";
   } else if (type->isPointerTy()) {
     format_string = "%s";
