@@ -1,5 +1,4 @@
 #pragma once
-#include <llvm/IR/Value.h>
 namespace ntc {
 class AST;
 class BlockItem;
@@ -73,42 +72,5 @@ class ASTVisitor {
   virtual void visit(ConditionalExpression&) = 0;
   virtual void visit(FunctionCall&) = 0;
   virtual void visit(ArrayReference&) = 0;
-};
-
-class IRVisitor {
- public:
-  virtual ~IRVisitor() {}
-  virtual llvm::Value* visit(AST&) = 0;
-  virtual llvm::Value* visit(BlockItem&) = 0;
-  virtual llvm::Value* visit(ExternalDeclaration&) = 0;
-  virtual llvm::Value* visit(TranslationUnit&) = 0;
-  virtual llvm::Value* visit(FunctionDefinition&) = 0;
-  virtual llvm::Value* visit(DeclarationSpecifier&) = 0;
-  virtual llvm::Value* visit(Identifier&) = 0;
-  virtual llvm::Value* visit(ParameterDeclaration&) = 0;
-  virtual llvm::Value* visit(TypeSpecifier&) = 0;
-  virtual llvm::Value* visit(Declaration&) = 0;
-  virtual llvm::Value* visit(Initializer&) = 0;
-  virtual llvm::Value* visit(Declarator&) = 0;
-  virtual llvm::Value* visit(Statement&) = 0;
-  virtual llvm::Value* visit(CompoundStatement&) = 0;
-  virtual llvm::Value* visit(ExpressionStatement&) = 0;
-  virtual llvm::Value* visit(ReturnStatement&) = 0;
-  virtual llvm::Value* visit(BreakStatement&) = 0;
-  virtual llvm::Value* visit(ContinueStatement&) = 0;
-  virtual llvm::Value* visit(IfStatement&) = 0;
-  virtual llvm::Value* visit(WhileStatement&) = 0;
-  virtual llvm::Value* visit(ForStatement&) = 0;
-  virtual llvm::Value* visit(Expression&) = 0;
-  virtual llvm::Value* visit(IntegerExpression&) = 0;
-  virtual llvm::Value* visit(FloatExpression&) = 0;
-  virtual llvm::Value* visit(BooleanExpression&) = 0;
-  virtual llvm::Value* visit(CharacterExpression&) = 0;
-  virtual llvm::Value* visit(StringLiteralExpression&) = 0;
-  virtual llvm::Value* visit(BinaryOperationExpression&) = 0;
-  virtual llvm::Value* visit(UnaryOperationExpression&) = 0;
-  virtual llvm::Value* visit(ConditionalExpression&) = 0;
-  virtual llvm::Value* visit(FunctionCall&) = 0;
-  virtual llvm::Value* visit(ArrayReference&) = 0;
 };
 }  // namespace ntc

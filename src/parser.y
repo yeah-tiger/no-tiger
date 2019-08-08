@@ -3,7 +3,7 @@
 %debug
 %defines
 %define api.namespace {ntc}
-%define parser_class_name {Parser}
+%define api.parser.class {Parser}
 %define api.value.type variant
 %locations
 
