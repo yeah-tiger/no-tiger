@@ -23,7 +23,7 @@ before_install:
   # clang, libc++, libc++abi
   - if [ "$OS" != "osx" ] && [ "$COMPILER" = "clang" ]; then export CC="clang-${CLANG_VERSION}" CXX="clang++-${CLANG_VERSION}"; fi
   # brew, doxygen, graphviz
-  - if [ "$OS" == "osx" ]; then brew update && echo 'export PATH="/usr/local/opt/bison/bin:$PATH"' >> ~/.bash_profile; && source ~/.bash_profile fi
+  - if [ "$OS" == "osx" ]; then brew update && echo 'export PATH="/usr/local/opt/bison/bin:$PATH"' >> ~/.bash_profile && source ~/.bash_profile; fi
   # cmake
   - cmake --version
   - bison --version
