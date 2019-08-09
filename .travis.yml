@@ -1,20 +1,51 @@
 language: cpp
-compiler: gcc
-os: linux
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-7
-    packages:
-      - g++-7
-      - llvm-7
-      - llvm-7-dev
 
-script:
-  - export CC=gcc-7
-  - export CXX=g++-7
+dist: xenial
+
+matrix:
+  include:
+    - name: "Linux (GCC)"
+      os: linux
+      compiler: gcc
+      env: OS=linux COMPILER=gcc GCC_VERSION=9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
+            - cmake
+            - bison
+            - flex
+          update: true
+    - name: "MacOS"
+      os: osx
+      compiler: clang
+      env: OS=osx COMPILER=clang
+      osx_image: xcode11
+      addons:
+        homebrew:
+          update: true
+          packages:
+            - flex
+            - bison
+
+branches:
+  only:
+    - master
+
+before_install:
+  # gcc
+  - if [ "$OS" != "osx" ] && [ "$COMPILER" = "gcc" ]; then export CC="gcc-${GCC_VERSION}" CXX="g++-${GCC_VERSION}"; fi
+  # clang, libc++, libc++abi
+  - if [ "$OS" != "osx" ] && [ "$COMPILER" = "clang" ]; then export CC="clang-${CLANG_VERSION}" CXX="clang++-${CLANG_VERSION}"; fi
+  # brew, doxygen, graphviz
+  - if [ "$OS" == "osx" ]; then brew update; fi
+  # cmake
   - cmake --version
   - bison --version
-  - llvm-config --version
+  - flex --version
+
+script: 
   - bash build.sh
