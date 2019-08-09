@@ -4,21 +4,6 @@ dist: xenial
 
 matrix:
   include:
-    - name: "Linux (GCC)"
-      os: linux
-      compiler: gcc
-      env: OS=linux COMPILER=gcc GCC_VERSION=9
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-9
-            - g++-9
-            - cmake
-            - bison
-            - flex
-          update: true
     - name: "MacOS"
       os: osx
       compiler: clang
@@ -38,7 +23,7 @@ before_install:
   # clang, libc++, libc++abi
   - if [ "$OS" != "osx" ] && [ "$COMPILER" = "clang" ]; then export CC="clang-${CLANG_VERSION}" CXX="clang++-${CLANG_VERSION}"; fi
   # brew, doxygen, graphviz
-  - if [ "$OS" == "osx" ]; then brew update; fi
+  - if [ "$OS" == "osx" ]; then brew update && echo 'export PATH="/usr/local/opt/bison/bin:$PATH"' >> ~/.bash_profile; fi
   # cmake
   - cmake --version
   - bison --version
