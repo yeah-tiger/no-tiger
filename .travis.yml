@@ -31,9 +31,6 @@ matrix:
             - flex
             - bison
 
-branches:
-  only:
-    - master
 
 before_install:
   # gcc
