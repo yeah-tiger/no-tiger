@@ -1,7 +1,7 @@
 .vscode/
 *.exe/
 src/*.o
-*.cpp
 llvm_include/
 build/
 *.ll
+*.g4
