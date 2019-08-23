@@ -1,5 +1,5 @@
 #include "tokenizer.hpp"
-
+#include <cctype>
 namespace ntc {
 namespace {
 static std::unordered_map<std::string, TokenType> build_keyword_map() {
@@ -47,7 +47,114 @@ static std::unordered_map<std::string, TokenType> build_keyword_map() {
 }
 }  // namespace
 std::unordered_map<std::string, TokenType> Tokenizer::keyword_map = build_keyword_map();
+
+Tokenizer::Tokenizer(const std::string& filename): filename(filename), line(1), column(0), current_char('\0'), error_flag(true) {
+  in.open(this->filename);
+  if (!in.is_open()) {
+    diag("failed to open file: " + filename);
+  }
+}
+
 Token Tokenizer::next_token() {
-  
+  SourceLocation cur_loc = make_location();
+  if (error_flag) {
+    return make_token(TokenType::RESERVED, cur_loc);
+  }
+  skip_whitespaces();
+  skip_comments();
+  if (in.eof()) {
+    return make_token(TokenType::END_OF_FILE, cur_loc);
+  }
+  // dispatch
+  if (std::isalpha(current_char) || current_char == '_') {
+    return handle_identifer_or_keyword();
+  } else if (std::isdigit(current_char) || (current_char == '.' && std::isdigit(peek())) ) {
+    return handle_number();
+  } else if (current_char == '\"') {
+    return handle_string();
+  } else if (current_char == '\'') {
+    return handle_char();
+  } else {
+    return handle_symbol_or_op();
+  }
+}
+
+void Tokenizer::advance() {
+  current_char = in.get();
+  if (current_char == '\n') {
+    line += 1;
+    column = 0;
+  } else {
+    column += 1;
+  }
+}
+
+char Tokenizer::peek() {
+  return in.peek();
+}
+
+void Tokenizer::skip_whitespaces() {
+  while (std::isspace(current_char)) {
+    advance();
+  }
+}
+
+void Tokenizer::skip_comments() {
+  // line comment
+  if (current_char == '/' && peek() == '/') {
+    // advance to the second '/'
+    advance();
+    // advance to the first character after "//"
+    advance();
+    while (!current_char == '\n') {
+      advance();
+    }
+    advance();
+  }
+  // block comment
+  if (current_char == '/' && peek() == '*') {
+    advance();
+    advance();
+    while (!(current_char == '*' && peek() == '/') ) {
+      advance();
+    }
+    advance();
+    advance();
+  }
+}
+
+Token Tokenizer::make_token(TokenType type, SourceLocation location) {
+  Token res(type, location, token_buffer);
+  token_buffer.clear();
+  return res;
+}
+
+SourceLocation Tokenizer::make_location() {
+  return SourceLocation(line, column);
+}
+
+Token Tokenizer::handle_identifer_or_keyword() {
+
+}
+
+Token Tokenizer::handle_number() {
+
+}
+
+Token Tokenizer::handle_string() {
+
+}
+
+Token Tokenizer::handle_char() {
+
+}
+
+Token Tokenizer::handle_symbol_or_op() {
+
+}
+
+void Tokenizer::diag(const std::string& msg) {
+  error_flag = true;
+  error_msgs.push_back(msg);
 }
 }  // namespace ntc

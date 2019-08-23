@@ -4,22 +4,17 @@
 namespace ntc {
 namespace {
 
-struct Location {
-  Location() : line(0), column(0) {}
-  Location(size_t line, size_t column) : line(line), column(column) {}
+struct SourceLocation {
+  SourceLocation() : line(0), column(0) {}
+  SourceLocation(size_t line, size_t column) : line(line), column(column) {}
   size_t line;
   size_t column;
-};
-struct Span {
-  Span() = default;
-  Span(Location start, Location end) : start(start), end(end) {}
-  Location start;
-  Location end;
 };
 }  // namespace
 enum class TokenType {
   // reserved
   RESERVED,
+  END_OF_FILE,
   // keyword
   KW_AUTO,
   KW_BOOL,
@@ -119,10 +114,10 @@ enum class TokenType {
 };
 struct Token {
   Token() : type(TokenType::RESERVED) {}
-  Token(TokenType type, Span span, const std::string& content)
-      : type(type), span(span), content(content) {}
+  Token(TokenType type, SourceLocation location, const std::string& content)
+      : type(type), location(location), content(content) {}
   TokenType type;
-  Span span;
+  SourceLocation location;
   std::string content;
 };
 }  // namespace ntc
